@@ -12,6 +12,7 @@ import weather
 from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 _lock = threading.Lock()
 _data = None          # WeatherData | None
