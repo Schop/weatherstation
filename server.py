@@ -55,7 +55,9 @@ def _fetch_loop(stop_event, refresh_event):
                 _state = "ok"
             elif _data is None:
                 _state = "error"
-        refresh_event.wait(config.REFRESH_INTERVAL)
+        # Retry in 30 s if we have no data yet (e.g. DNS not ready at boot)
+        interval = 30 if _state == "error" else config.REFRESH_INTERVAL
+        refresh_event.wait(interval)
 
 
 # ---------------------------------------------------------------------------
