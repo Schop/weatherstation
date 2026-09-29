@@ -90,16 +90,16 @@ body {
 }
 
 .condition {
-  font-size: 19px;
+  font-size: 22px;
   color: #9A8A78;
-  margin-top: 5px;
+  margin-top: 6px;
   font-weight: 600;
 }
 
 .feels {
-  font-size: 19px;
+  font-size: 22px;
   color: #9A8A78;
-  margin-top: 3px;
+  margin-top: 6px;
   font-weight: 600;
 }
 
@@ -119,7 +119,7 @@ body {
 }
 
 .stat {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   white-space: nowrap;
 }
