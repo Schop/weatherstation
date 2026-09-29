@@ -7,7 +7,7 @@ Wants=weatherstation.service
 User=pi
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/pi/.Xauthority
-ExecStart=chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble http://localhost:5000
+ExecStart=/bin/bash -c 'unclutter -idle 0.5 -root & exec chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble http://localhost:5000'
 Restart=always
 RestartSec=3
 
