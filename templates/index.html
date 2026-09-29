@@ -32,6 +32,7 @@
     <div class="weather-info">
       <div class="temp">{{ data.temp | round | int }}°C</div>
       <div class="condition">{{ data.condition }}</div>
+      <div class="precip-main{% if data.precip_prob > 20 %} wet{% endif %}">Kans op neerslag: {{ data.precip_prob }}%</div>
       <div class="feels">Voelt als {{ data.feels_like | round | int }}°C</div>
     </div>
 
@@ -45,11 +46,6 @@
       </div>
       <div class="stat-row">
         <span class="stat wind">Wind: {{ data.wind_speed | round | int }}&thinsp;km/u {{ data.wind_dir_label }}</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat precip{% if data.precip_prob > 20 %} wet{% endif %}">
-          {{ data.precip_prob }}%&thinsp;kans op neerslag
-        </span>
       </div>
     </div>
 
@@ -131,7 +127,7 @@
     const days   = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
     const months = ['januari','februari','maart','april','mei','juni','juli',
                     'augustus','september','oktober','november','december'];
-    document.getElementById('main-date').textContent   = `${days[now.getDay()].toLowerCase()} ${now.getDate()} ${months[now.getMonth()]}`;
+    document.getElementById('main-date').textContent   = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
     document.getElementById('main-clock').textContent  = `${hh}:${mm}`;
     document.getElementById('hourly-clock').textContent = `${hh}:${mm}`;
   }
