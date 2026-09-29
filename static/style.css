@@ -89,28 +89,14 @@ body {
   color: #1E1C1A;
 }
 
-.condition {
+.condition, .precip-main, .feels {
   font-size: 22px;
   color: #9A8A78;
   margin-top: 6px;
   font-weight: 600;
-}
-
-.precip-main {
-  font-size: 22px;
-  font-weight: 600;
-  color: #9A8A78;
-  margin-top: 6px;
 }
 
 .precip-main.wet { color: #4B8CD7; }
-
-.feels {
-  font-size: 22px;
-  color: #9A8A78;
-  margin-top: 6px;
-  font-weight: 600;
-}
 
 /* ── Stats panel (right column) ─────────────────────── */
 .stats-panel {
@@ -119,7 +105,6 @@ body {
   padding: 22px 20px 14px 8px;
   display: flex;
   flex-direction: column;
-  /*justify-content: space-evenly;*/
 }
 
 .stat-row {
