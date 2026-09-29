@@ -1,0 +1,14 @@
+[Unit]
+Description=Weather Station Flask Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/pi/weatherstation
+ExecStart=/usr/bin/python3 /home/pi/weatherstation/server.py
+Restart=always
+RestartSec=5
+User=pi
+
+[Install]
+WantedBy=multi-user.target
