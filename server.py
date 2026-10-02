@@ -8,6 +8,7 @@ Pi kiosk: chromium-browser --kiosk --noerrdialogs --disable-infobars http://loca
 
 import threading
 import time
+import bambu
 import config
 import netstatus
 import sysinfo
@@ -22,6 +23,7 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 _lock = threading.Lock()
 _data = None          # WeatherData | None
 _state = "loading"   # "loading" | "ok" | "error"
+_printer = None       # bambu.Printer | None (started in __main__ if configured)
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +136,16 @@ def network():
     return resp
 
 
+@app.route("/api/printer")
+def printer():
+    if _printer is None:
+        resp = jsonify({"configured": False})
+    else:
+        resp = jsonify(_printer.snapshot())
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @app.route("/api/ping")
 def ping():
     with _lock:
@@ -151,6 +163,11 @@ if __name__ == "__main__":
     t = threading.Thread(target=_fetch_loop, args=(stop_ev, refresh_ev),
                          daemon=True, name="fetch")
     t.start()
+
+    if config.BAMBU_SERIAL and config.BAMBU_ACCESS_CODE:
+        _printer = bambu.Printer(config.BAMBU_HOST, config.BAMBU_SERIAL,
+                                 config.BAMBU_ACCESS_CODE)
+        _printer.start()
 
     # Kick off the first fetch immediately
     refresh_ev.set()

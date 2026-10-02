@@ -8,6 +8,13 @@ REFRESH_INTERVAL = 600  # seconds between API calls
 FPS = 10
 WIND_WARN_KMH = 30  # wind tile turns red above this speed
 
+# --- 3D printer (Bambu Lab, LAN) ---
+# Put BAMBU_SERIAL and BAMBU_ACCESS_CODE in config_local.py (git-ignored),
+# not here: the access code is a credential and this repo is on GitHub.
+BAMBU_HOST = "192.168.1.47"
+BAMBU_SERIAL = ""
+BAMBU_ACCESS_CODE = ""
+
 # --- Network page ---
 # Devices to monitor. Without "port" the host is pinged; with "port" a TCP
 # connection is tried instead (use this for hosts that block ping).
@@ -44,3 +51,9 @@ HIGH_COLOR     = (205, 85,  55)
 LOW_COLOR      = (65,  125, 200)
 DIVIDER_COLOR  = (218, 212, 202)
 ERROR_COLOR    = (200, 65,  65)
+
+# --- Local overrides / secrets (config_local.py is git-ignored) ---
+try:
+    from config_local import *  # noqa: F401,F403
+except ImportError:
+    pass

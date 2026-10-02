@@ -107,6 +107,7 @@
     <div class="tabs">
       <span class="tab active" id="tab-system"  onclick="event.stopPropagation(); showTab('system')">System</span>
       <span class="tab"        id="tab-network" onclick="event.stopPropagation(); showTab('network')">Network</span>
+      <span class="tab"        id="tab-printer" onclick="event.stopPropagation(); showTab('printer')">Printer</span>
     </div>
     <span class="sclock" id="system-clock"></span>
   </div>
@@ -175,6 +176,57 @@
 
   </div><!-- #page-network -->
 
+  <div class="tab-page" id="page-printer" style="display:none">
+
+    <div class="pr-layout" id="pr-layout">
+
+      <div class="pr-main">
+        <div class="ring big">
+          <svg viewBox="0 0 200 200">
+            <circle class="ring-bg" cx="100" cy="100" r="82"/>
+            <circle class="ring-fg" cx="100" cy="100" r="82"/>
+          </svg>
+          <div class="ring-text">
+            <span class="ring-value">–</span>
+            <span class="ring-unit">%</span>
+          </div>
+        </div>
+        <div class="pr-state">–</div>
+        <div class="pr-file">&nbsp;</div>
+      </div>
+
+      <div class="pr-side">
+        <div class="pr-tiles">
+          <div class="tile" id="p-nozzle">
+            <span class="tile-label">Nozzle</span>
+            <span class="tile-value">–</span>
+          </div>
+          <div class="tile" id="p-bed">
+            <span class="tile-label">Bed</span>
+            <span class="tile-value">–</span>
+          </div>
+          <div class="tile" id="p-remaining">
+            <span class="tile-label">Time remaining</span>
+            <span class="tile-value">–</span>
+          </div>
+          <div class="tile" id="p-layer">
+            <span class="tile-label">Layer</span>
+            <span class="tile-value">–</span>
+          </div>
+        </div>
+
+        <div class="pr-filament">
+          <span class="tile-label">Filament</span>
+          <div class="trays" id="p-trays"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="pr-msg" id="pr-msg" style="display:none"></div>
+
+  </div><!-- #page-printer -->
+
   <div class="sys-footer">tap to go back</div>
 
 </div><!-- #system-view -->
@@ -212,14 +264,14 @@
   }
   function showTab(tab) {
     currentTab = tab;
-    for (const t of ['system', 'network']) {
+    for (const t of ['system', 'network', 'printer']) {
       document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     }
-    const refresh = tab === 'system' ? refreshSystem : refreshNetwork;
+    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter }[tab];
     clearInterval(sysTimer); clearTimeout(idleTimer);
     refresh();
-    sysTimer  = setInterval(refresh, tab === 'system' ? 2000 : 4000);
+    sysTimer  = setInterval(refresh, tab === 'network' ? 4000 : 2000);
     idleTimer = setTimeout(closeSystem, 60000);   // back to weather after 1 min
   }
 
@@ -334,6 +386,86 @@
       }
     } catch (e) { /* keep last values; try again on next tick */ }
   }
+
+  // ── Printer tab ────────────────────────────────────────────
+  const PRINT_STATES = {
+    RUNNING: ['Printing', 'running'], PREPARE: ['Preparing', 'running'], SLICING: ['Preparing', 'running'],
+    PAUSE: ['Paused', 'paused'], FINISH: ['Finished', 'done'], FAILED: ['Failed', 'failed'], IDLE: ['Idle', 'idle'],
+  };
+  const fmtTemp = (v, target) =>
+    v == null ? '–' : Math.round(v) + '°' + (target > 0 ? ` / ${Math.round(target)}°` : '');
+
+  function showPrinterMessage(text) {
+    document.getElementById('pr-layout').style.display = 'none';
+    const m = document.getElementById('pr-msg');
+    m.textContent = text;
+    m.style.display = 'flex';
+  }
+
+  async function refreshPrinter() {
+    try {
+      const r = await fetch('/api/printer', { cache: 'no-store' });
+      const d = await r.json();
+
+      if (!d.configured) {
+        showPrinterMessage('Printer not configured — set BAMBU_SERIAL and BAMBU_ACCESS_CODE in config_local.py');
+        return;
+      }
+      if (!d.connected || !d.has_data) {
+        showPrinterMessage(d.error ? `Printer: ${d.error}` : (d.connected ? 'Waiting for printer data…' : 'Printer offline'));
+        return;
+      }
+      document.getElementById('pr-msg').style.display = 'none';
+      document.getElementById('pr-layout').style.display = 'flex';
+
+      const [label, cls] = PRINT_STATES[d.state] || [d.state ? d.state.toLowerCase() : '–', 'idle'];
+      const layout = document.getElementById('pr-layout');
+      layout.className = 'pr-layout ' + cls;
+
+      const pct = d.percent == null ? 0 : Math.max(0, Math.min(100, d.percent));
+      const fg = layout.querySelector('.ring-fg');
+      fg.style.strokeDasharray  = CIRC;
+      fg.style.strokeDashoffset = CIRC * (1 - pct / 100);
+      layout.querySelector('.ring-value').textContent = d.percent == null ? '–' : d.percent;
+      layout.querySelector('.pr-state').textContent = label;
+      layout.querySelector('.pr-file').textContent  = d.file || ' ';
+
+      const active = cls === 'running' || cls === 'paused';
+      setTile('p-nozzle', fmtTemp(d.nozzle, d.nozzle_target));
+      setTile('p-bed', fmtTemp(d.bed, d.bed_target));
+      let rem = '–';
+      if (active && d.remaining_min != null) {
+        const done = new Date(Date.now() + d.remaining_min * 60000);
+        rem = fmtDuration(d.remaining_min * 60).replace(/^0m$/, '<1m') +
+              ` · ${String(done.getHours()).padStart(2, '0')}:${String(done.getMinutes()).padStart(2, '0')}`;
+      }
+      setTile('p-remaining', rem);
+      setTile('p-layer', d.layer != null && d.total_layers ? `${d.layer} / ${d.total_layers}` : '–');
+
+      const box = document.getElementById('p-trays');
+      box.replaceChildren();
+      if (!d.filament.length) {
+        const none = document.createElement('span');
+        none.className = 'tray-none';
+        none.textContent = 'No AMS detected';
+        box.append(none);
+      }
+      for (const t of d.filament) {
+        const el = document.createElement('div');
+        el.className = 'tray' + (t.active ? ' active' : '');
+        const sw = document.createElement('i');
+        sw.className = 'swatch';
+        if (t.color) sw.style.background = '#' + t.color;
+        const ty = document.createElement('span'); ty.className = 'tray-type';
+        ty.textContent = t.type || 'empty';
+        const rm = document.createElement('span'); rm.className = 'tray-remain';
+        rm.textContent = t.remain != null && t.remain >= 0 && t.type ? t.remain + '%' : '';
+        el.append(sw, ty, rm);
+        box.append(el);
+      }
+    } catch (e) { /* keep last values; try again on next tick */ }
+  }
+  function setTile(id, v) { document.querySelector('#' + id + ' .tile-value').textContent = v; }
 
   // ── Auto-refresh (full page reload fetches fresh data) ─────
   setTimeout(() => location.reload(), {{ cfg.REFRESH_INTERVAL * 1000 }});
