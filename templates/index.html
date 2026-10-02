@@ -103,13 +103,13 @@
 <div id="system-view" onclick="closeSystem()">
 
   <div class="sys-bar">
-    <span class="back">← terug</span>
-    <span class="title">Systeemstatus</span>
+    <span class="back">← back</span>
+    <span class="title">System status</span>
     <span class="sclock" id="system-clock"></span>
   </div>
 
   <div class="gauges">
-    {% for g in [('cpu', 'Processor'), ('mem', 'Geheugen'), ('disk', 'Opslag'), ('temp', 'Temperatuur')] %}
+    {% for g in [('cpu', 'Processor'), ('mem', 'Memory'), ('disk', 'Storage'), ('temp', 'Temperature')] %}
     <div class="gauge" id="g-{{ g[0] }}">
       <div class="ring">
         <svg viewBox="0 0 200 200">
@@ -128,19 +128,19 @@
   </div>
 
   <div class="info-grid">
-    <div class="info"><span class="k">Hostnaam</span><span class="v" id="i-hostname">–</span></div>
-    <div class="info"><span class="k">IP-adres</span><span class="v" id="i-ip">–</span></div>
-    <div class="info"><span class="k">Besturingssysteem</span><span class="v" id="i-os">–</span></div>
+    <div class="info"><span class="k">Hostname</span><span class="v" id="i-hostname">–</span></div>
+    <div class="info"><span class="k">IP address</span><span class="v" id="i-ip">–</span></div>
+    <div class="info"><span class="k">Operating system</span><span class="v" id="i-os">–</span></div>
     <div class="info"><span class="k">Kernel</span><span class="v" id="i-kernel">–</span></div>
     <div class="info"><span class="k">Processor</span><span class="v" id="i-cpu">–</span></div>
-    <div class="info"><span class="k">Belasting (1 / 5 / 15 min)</span><span class="v" id="i-load">–</span></div>
-    <div class="info"><span class="k">Systeem aan sinds</span><span class="v" id="i-uptime">–</span></div>
-    <div class="info"><span class="k">Weerstation actief</span><span class="v" id="i-app">–</span></div>
-    <div class="info"><span class="k">Weerdata bijgewerkt</span><span class="v" id="i-weather">–</span></div>
+    <div class="info"><span class="k">Load (1 / 5 / 15 min)</span><span class="v" id="i-load">–</span></div>
+    <div class="info"><span class="k">System uptime</span><span class="v" id="i-uptime">–</span></div>
+    <div class="info"><span class="k">Weather app uptime</span><span class="v" id="i-app">–</span></div>
+    <div class="info"><span class="k">Weather last updated</span><span class="v" id="i-weather">–</span></div>
     <div class="info"><span class="k">Python</span><span class="v" id="i-python">–</span></div>
   </div>
 
-  <div class="sys-footer">tik om terug te gaan</div>
+  <div class="sys-footer">tap to go back</div>
 
 </div><!-- #system-view -->
 
@@ -185,7 +185,7 @@
   function fmtDuration(s) {
     if (s == null) return '–';
     const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
-    return d ? `${d}d ${h}u ${m}m` : h ? `${h}u ${m}m` : `${m}m`;
+    return d ? `${d}d ${h}h ${m}m` : h ? `${h}h ${m}m` : `${m}m`;
   }
   function setGauge(id, pct, value, unit, sub) {
     const g = document.getElementById('g-' + id);
@@ -214,7 +214,7 @@
       setGauge('disk', k && 100 * k.used / k.total, k && Math.round(100 * k.used / k.total), '%',
                k && `${fmtBytes(k.used)} / ${fmtBytes(k.total)}`);
       setGauge('temp', d.temp, d.temp != null && Math.round(d.temp), '°C',
-               d.temp == null ? 'niet beschikbaar' : '');   // ring = 0–100 °C
+               d.temp == null ? 'not available' : '');   // ring = 0–100 °C
 
       setText('i-hostname', d.hostname);
       setText('i-ip', d.ip);
