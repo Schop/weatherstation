@@ -6,6 +6,7 @@ LOCATION_NAME = "Someren"
 # --- Behaviour ---
 REFRESH_INTERVAL = 600  # seconds between API calls
 FPS = 10
+WIND_WARN_KMH = 30  # wind tile turns red above this speed
 
 # --- Display ---
 SCREEN_WIDTH = 800

@@ -49,7 +49,7 @@
         <span class="tile-label">Vochtigheid</span>
         <span class="tile-value">{{ data.humidity }}%</span>
       </div>
-      <div class="tile">
+      <div class="tile{% if data.wind_speed > cfg.WIND_WARN_KMH %} warn{% endif %}">
         <span class="tile-label">Wind</span>
         <span class="tile-value">{{ data.wind_speed | round | int }} <small>km/u {{ data.wind_dir_label }}</small></span>
       </div>

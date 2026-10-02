@@ -141,11 +141,14 @@ body {
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
 }
 
 .tile-label {
-  font-size: 18px;
+  font-size: 28px;
   font-weight: 600;
   color: #9A8A78;
   letter-spacing: 0.3px;
@@ -166,6 +169,8 @@ body {
 
 .tile.sunrise .tile-value { color: #D4A030; }
 .tile.sunset  .tile-value { color: #8888B8; }
+.tile.warn    .tile-value,
+.tile.warn    .tile-value small { color: #B85C50; }
 
 /* ── Forecast strips ────────────────────────────────── */
 .strip {
