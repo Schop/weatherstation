@@ -4,12 +4,11 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-WorkingDirectory=/home/pi/weatherstation
-ExecStartPre=/bin/sleep 10
-ExecStart=/usr/bin/python3 /home/pi/weatherstation/server.py
+WorkingDirectory=__DIR__
+ExecStart=/usr/bin/python3 __DIR__/server.py
 Restart=always
 RestartSec=5
-User=pi
+User=__USER__
 
 [Install]
 WantedBy=multi-user.target
