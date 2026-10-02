@@ -51,6 +51,7 @@ body {
 
 /* ── Top bar ─────────────────────────────────────────── */
 .top-bar {
+  position: relative;          /* the tabs are centred on the bar itself */
   height: 84px;
   display: flex;
   align-items: center;
@@ -60,11 +61,22 @@ body {
   border-bottom: 1px solid #E0D8CE;
 }
 
+.top-bar > .tabs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* clock with the date underneath, so long dates never reach the tabs */
 .top-bar-left {
   display: flex;
-  align-items: baseline;
-  gap: 20px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
 }
+.top-bar-left .clock { font-size: 40px; line-height: 1.05; }
+.top-bar-left .date  { font-size: 22px; line-height: 1.15; }
 
 .clock, .date, .location {
   font-size: 44px;
@@ -75,12 +87,6 @@ body {
 .clock { font-variant-numeric: tabular-nums; }
 
 .date { color: #6B6258; font-weight: 600; font-size: 32px; }
-
-.top-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-}
 
 #home-page, #radar-page {
   flex: 1;
