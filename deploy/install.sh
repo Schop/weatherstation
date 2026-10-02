@@ -26,7 +26,7 @@ fi
 for tool in unclutter xset curl; do
     command -v "$tool" >/dev/null || echo "Warning: '$tool' not found (sudo apt install unclutter x11-xserver-utils curl)" >&2
 done
-python3 -c "import flask" 2>/dev/null || echo "Warning: Flask missing (pip install -r requirements.txt)" >&2
+python3 -c "import flask" 2>/dev/null || echo "Warning: Flask missing (sudo apt install python3-flask)" >&2
 
 for unit in weatherstation weatherstation-kiosk; do
     sed -e "s|__USER__|$APP_USER|g" \
