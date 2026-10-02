@@ -631,3 +631,119 @@ body {
   font-weight: 600;
   color: #9A8A78;
 }
+
+/* ── Radar page ─────────────────────────────────────── */
+.rd-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 20px;
+  padding: 24px 40px;
+}
+
+.rd-map {
+  flex: 0 0 600px;
+  background: #EEEAE2;
+  border-radius: 20px;
+  padding: 20px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rd-map img {
+  width: 560px;
+  height: 521px;               /* source image is 550 x 512 */
+  border-radius: 14px;
+  background: #DDD5CA;
+  object-fit: cover;
+}
+
+.rd-caption { font-size: 15px; font-weight: 600; color: #B0A090; }
+
+.rd-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rd-summary {
+  height: 170px;
+  flex-shrink: 0;
+  background: #EEEAE2;
+  border-radius: 20px;
+  padding: 0 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.rd-text { font-size: 44px; font-weight: 700; color: #262320; }
+.rd-summary.dry  .rd-text { color: #5E9E6E; }
+.rd-summary.soon .rd-text,
+.rd-summary.wet  .rd-text { color: #4B8CD7; }
+
+.rd-chart-card {
+  flex: 1;
+  min-height: 0;
+  background: #EEEAE2;
+  border-radius: 20px;
+  padding: 30px 28px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.rd-chart {
+  position: relative;
+  flex: 1;
+  margin-left: 78px;           /* room for the intensity labels */
+}
+
+.rd-grid span {
+  position: absolute;
+  left: -78px;
+  width: calc(100% + 78px);
+  height: 18px;
+  line-height: 18px;
+  transform: translateY(50%);
+  font-size: 14px;
+  font-weight: 600;
+  color: #9A8A78;
+}
+.rd-grid span::after {
+  content: "";
+  position: absolute;
+  left: 78px;
+  right: 0;
+  top: 50%;
+  border-top: 1px dashed #DDD5CA;
+}
+
+.rd-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  border-bottom: 2px solid #D2C9BC;
+}
+.rd-bar { flex: 1; border-radius: 4px 4px 0 0; background: #A9C6EA; }
+.rd-bar.wet { background: #4B8CD7; }
+
+.rd-axis {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0 0 78px;
+  height: 22px;
+}
+.rd-axis span {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9A8A78;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

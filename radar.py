@@ -1,0 +1,86 @@
+"""
+Buienradar data: 5-minute rain forecast for the configured location and the
+animated rain radar image. Both are cached so repeated page opens are cheap and
+a short outage serves the last good data.
+"""
+
+import sys
+import threading
+import time
+import urllib.request
+
+RAIN_URL = "https://gpsgadget.buienradar.nl/data/raintext?lat={lat:.2f}&lon={lon:.2f}"
+GIF_URL = ("https://image.buienradar.nl/2.0/image/animation/RadarMapRainNL"
+           "?width=550&height=512&renderBackground=True&renderBranding=False&renderText=True")
+
+RAIN_TTL = 120     # seconds
+GIF_TTL = 300
+WET_MM = 0.1       # mm/h at or above this counts as rain
+
+_lock = threading.Lock()
+_cache = {}        # key -> (timestamp, value)
+
+
+def _get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "weatherstation/1.0"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return resp.read()
+
+
+def _cached(key, ttl, loader):
+    """Return a fresh cached value, else load; fall back to stale data on failure."""
+    with _lock:
+        hit = _cache.get(key)
+        if hit and time.time() - hit[0] < ttl:
+            return hit[1]
+        try:
+            value = loader()
+        except Exception as exc:
+            print(f"[radar] {key} fetch error: {exc}", file=sys.stderr)
+            return hit[1] if hit else None
+        _cache[key] = (time.time(), value)
+        return value
+
+
+def _mm_per_hour(raw):
+    """Buienradar intensity (0-255) to mm/h."""
+    return 0.0 if raw == 0 else round(10 ** ((raw - 109) / 32), 2)
+
+
+def _parse_rain(text):
+    points = []
+    for line in text.splitlines():
+        value, _, label = line.strip().partition("|")
+        if value.isdigit() and label:
+            points.append({"t": label, "mm": _mm_per_hour(int(value))})
+    return points
+
+
+def _summary(points):
+    wet = [p["mm"] >= WET_MM for p in points]
+    if not any(wet):
+        return "dry", "Dry for the next 2 hours"
+    if wet[0]:
+        for i, w in enumerate(wet):
+            if not w:
+                return "wet", f"Raining, dry from {points[i]['t']}"
+        return "wet", "Rain for the next 2 hours"
+    first = wet.index(True)
+    return "soon", f"Rain from {points[first]['t']}"
+
+
+def rain_forecast(lat, lon):
+    """{'points': [{'t','mm'}...], 'state', 'summary', 'updated'} or None."""
+    def load():
+        points = _parse_rain(_get(RAIN_URL.format(lat=lat, lon=lon)).decode("utf-8", "replace"))
+        if not points:
+            raise ValueError("empty rain forecast")
+        state, text = _summary(points)
+        return {"points": points, "state": state, "summary": text,
+                "updated": time.strftime("%H:%M")}
+    return _cached("rain", RAIN_TTL, load)
+
+
+def radar_gif():
+    """Animated radar GIF as bytes, or None."""
+    return _cached("gif", GIF_TTL, lambda: _get(GIF_URL))

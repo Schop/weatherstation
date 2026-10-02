@@ -108,6 +108,7 @@
       <span class="tab active" id="tab-system"  onclick="event.stopPropagation(); showTab('system')">System</span>
       <span class="tab"        id="tab-network" onclick="event.stopPropagation(); showTab('network')">Network</span>
       <span class="tab"        id="tab-printer" onclick="event.stopPropagation(); showTab('printer')">3D Printer</span>
+      <span class="tab"        id="tab-radar"   onclick="event.stopPropagation(); showTab('radar')">Radar</span>
     </div>
     <span class="sclock" id="system-clock"></span>
   </div>
@@ -227,6 +228,32 @@
 
   </div><!-- #page-printer -->
 
+  <div class="tab-page" id="page-radar" style="display:none">
+    <div class="rd-layout">
+
+      <div class="rd-map">
+        <img id="rd-img" alt="Rain radar">
+        <div class="rd-caption">Buienradar · rain radar, 5-minute steps</div>
+      </div>
+
+      <div class="rd-side">
+        <div class="rd-summary" id="rd-summary">
+          <span class="tile-label">Next 2 hours · {{ cfg.LOCATION_NAME }}</span>
+          <span class="rd-text">–</span>
+        </div>
+
+        <div class="rd-chart-card">
+          <div class="rd-chart" id="rd-chart">
+            <div class="rd-grid"><span style="bottom:14%">light</span><span style="bottom:45%">moderate</span><span style="bottom:100%">heavy</span></div>
+            <div class="rd-bars" id="rd-bars"></div>
+          </div>
+          <div class="rd-axis" id="rd-axis"></div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- #page-radar -->
+
   <div class="sys-footer">tap to go back</div>
 
 </div><!-- #system-view -->
@@ -264,14 +291,16 @@
   }
   function showTab(tab) {
     currentTab = tab;
-    for (const t of ['system', 'network', 'printer']) {
+    for (const t of ['system', 'network', 'printer', 'radar']) {
       document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     }
-    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter }[tab];
+    const refresh = { system: refreshSystem, network: refreshNetwork,
+                      printer: refreshPrinter, radar: refreshRadar }[tab];
+    const every   = { system: 2000, network: 4000, printer: 2000, radar: 30000 }[tab];
     clearInterval(sysTimer); clearTimeout(idleTimer);
     refresh();
-    sysTimer  = setInterval(refresh, tab === 'network' ? 4000 : 2000);
+    sysTimer  = setInterval(refresh, every);
     idleTimer = setTimeout(closeSystem, 60000);   // back to weather after 1 min
   }
 
@@ -466,6 +495,45 @@
     } catch (e) { /* keep last values; try again on next tick */ }
   }
   function setTile(id, v) { document.querySelector('#' + id + ' .tile-value').textContent = v; }
+
+  // ── Radar tab ──────────────────────────────────────────────
+  let radarImgLoaded = 0;
+  const RAIN_SCALE_MM = 5;     // bar height is sqrt-scaled; 5 mm/h = full height
+
+  async function refreshRadar() {
+    // Reload the animated map when the tab opens and then every 5 minutes (restarts the loop)
+    if (Date.now() - radarImgLoaded > 300000) {
+      document.getElementById('rd-img').src = '/api/radar.gif?t=' + Date.now();
+      radarImgLoaded = Date.now();
+    }
+    try {
+      const r = await fetch('/api/rain', { cache: 'no-store' });
+      const d = await r.json();
+      const sum = document.getElementById('rd-summary');
+      const bars = document.getElementById('rd-bars');
+      const axis = document.getElementById('rd-axis');
+      if (!d.points) {
+        sum.className = 'rd-summary';
+        sum.querySelector('.rd-text').textContent = 'Rain forecast unavailable';
+        return;
+      }
+      sum.className = 'rd-summary ' + d.state;
+      sum.querySelector('.rd-text').textContent = d.summary;
+
+      bars.replaceChildren(); axis.replaceChildren();
+      d.points.forEach((p, i) => {
+        const bar = document.createElement('div');
+        bar.className = 'rd-bar' + (p.mm >= 0.1 ? ' wet' : '');
+        const h = p.mm > 0 ? Math.max(4, 100 * Math.min(1, Math.sqrt(p.mm / RAIN_SCALE_MM))) : 0;
+        bar.style.height = h + '%';
+        bar.title = `${p.t}: ${p.mm} mm/h`;
+        bars.append(bar);
+        const tick = document.createElement('span');
+        tick.textContent = i % 6 === 0 ? p.t : '';     // label every 30 minutes
+        axis.append(tick);
+      });
+    } catch (e) { /* keep last values; try again on next tick */ }
+  }
 
   // ── Auto-refresh (full page reload fetches fresh data) ─────
   setTimeout(() => location.reload(), {{ cfg.REFRESH_INTERVAL * 1000 }});

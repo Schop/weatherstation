@@ -11,9 +11,10 @@ import time
 import bambu
 import config
 import netstatus
+import radar
 import sysinfo
 import weather
-from flask import Flask, render_template, jsonify
+from flask import Flask, Response, render_template, jsonify
 
 _STARTED = time.time()
 
@@ -134,6 +135,22 @@ def network():
     resp = jsonify(netstatus.snapshot(config.NETWORK_DEVICES))
     resp.headers["Cache-Control"] = "no-store"
     return resp
+
+
+@app.route("/api/rain")
+def rain():
+    data = radar.rain_forecast(config.LATITUDE, config.LONGITUDE)
+    resp = jsonify(data or {"error": "unavailable"})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/radar.gif")
+def radar_image():
+    gif = radar.radar_gif()
+    if gif is None:
+        return Response(status=503)
+    return Response(gif, mimetype="image/gif", headers={"Cache-Control": "no-store"})
 
 
 @app.route("/api/printer")
