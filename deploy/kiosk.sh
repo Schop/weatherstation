@@ -15,4 +15,5 @@ fi
 exec "$CHROMIUM" --kiosk --noerrdialogs --disable-infobars \
     --disable-session-crashed-bubble --disk-cache-size=1 \
     --ozone-platform-hint=auto --cursor=none \
+    --password-store=basic \
     http://localhost:5000
