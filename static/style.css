@@ -264,3 +264,131 @@ body {
   font-size: 24px;
   color: #9A8A78;
 }
+
+/* ── System status page ─────────────────────────────── */
+.top-bar { cursor: pointer; }
+
+#system-view {
+  position: absolute;
+  inset: 0;
+  width: 1280px;
+  height: 800px;
+  display: none;
+  flex-direction: column;
+}
+
+.sys-bar {
+  height: 84px;
+  background: #EEE9E2;
+  border-bottom: 1px solid #E0D8CE;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+}
+
+.sys-bar .back  { font-size: 22px; font-weight: 600; color: #D47820; margin-right: auto; }
+.sys-bar .title { font-size: 34px; font-weight: 700; color: #262320; }
+.sys-bar .sclock {
+  font-size: 30px; font-weight: 600; color: #9A8A78; margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ring gauges */
+.gauges {
+  height: 330px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 24px 40px 0;
+}
+
+.gauge {
+  background: #EEEAE2;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.ring {
+  position: relative;
+  width: 190px;
+  height: 190px;
+}
+
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+
+.ring circle {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.ring-bg { stroke: #DDD5CA; }
+
+.ring-fg {
+  stroke: #D47820;
+  stroke-dasharray: 515;
+  stroke-dashoffset: 515;
+  transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease;
+}
+
+.gauge.hot .ring-fg { stroke: #B85C50; }
+
+.ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding-top: 62px;
+  gap: 2px;
+}
+
+.ring-value { font-size: 58px; font-weight: 700; color: #1E1C1A; line-height: 1; font-variant-numeric: tabular-nums; }
+.ring-unit  { font-size: 24px; font-weight: 600; color: #9A8A78; }
+
+.gauge-label { font-size: 24px; font-weight: 700; color: #262320; margin-top: 6px; }
+.gauge-sub   { font-size: 17px; font-weight: 600; color: #9A8A78; font-variant-numeric: tabular-nums; }
+
+/* Details list */
+.info-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-flow: row;
+  column-gap: 60px;
+  padding: 12px 40px 0;
+  align-content: start;
+}
+
+.info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  padding: 13px 4px;
+  border-bottom: 1px solid #E0D8CE;
+  min-width: 0;
+}
+
+.info .k { font-size: 18px; font-weight: 600; color: #9A8A78; white-space: nowrap; }
+.info .v {
+  font-size: 20px; font-weight: 700; color: #262320;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.sys-footer {
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #C0B0A0;
+}

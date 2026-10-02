@@ -7,9 +7,13 @@ Pi kiosk: chromium-browser --kiosk --noerrdialogs --disable-infobars http://loca
 """
 
 import threading
+import time
 import config
+import sysinfo
 import weather
 from flask import Flask, render_template, jsonify
+
+_STARTED = time.time()
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -106,6 +110,20 @@ def index():
         strip_hourly=strip_hourly,
         daily_items=daily_items,
     )
+
+
+@app.route("/api/system")
+def system():
+    info = sysinfo.snapshot()
+    with _lock:
+        info["weather_state"] = _state
+        info["weather_updated"] = (_data.fetched_at.strftime("%H:%M:%S")
+                                   if _data else None)
+    info["app_uptime"] = int(time.time() - _STARTED)
+    info["refresh_interval"] = config.REFRESH_INTERVAL
+    resp = jsonify(info)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @app.route("/api/ping")

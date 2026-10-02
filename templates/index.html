@@ -16,7 +16,7 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div id="main-view">
 
-  <div class="top-bar">
+  <div class="top-bar" onclick="openSystem()">
     <div class="top-bar-left">
       <div class="clock" id="main-clock"></div>
       <div class="date" id="main-date"></div>
@@ -97,6 +97,54 @@
 </div><!-- #main-view -->
 
 
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SYSTEM STATUS PAGE                                         -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="system-view" onclick="closeSystem()">
+
+  <div class="sys-bar">
+    <span class="back">← terug</span>
+    <span class="title">Systeemstatus</span>
+    <span class="sclock" id="system-clock"></span>
+  </div>
+
+  <div class="gauges">
+    {% for g in [('cpu', 'Processor'), ('mem', 'Geheugen'), ('disk', 'Opslag'), ('temp', 'Temperatuur')] %}
+    <div class="gauge" id="g-{{ g[0] }}">
+      <div class="ring">
+        <svg viewBox="0 0 200 200">
+          <circle class="ring-bg" cx="100" cy="100" r="82"/>
+          <circle class="ring-fg" cx="100" cy="100" r="82"/>
+        </svg>
+        <div class="ring-text">
+          <span class="ring-value">–</span>
+          <span class="ring-unit"></span>
+        </div>
+      </div>
+      <div class="gauge-label">{{ g[1] }}</div>
+      <div class="gauge-sub">&nbsp;</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="info-grid">
+    <div class="info"><span class="k">Hostnaam</span><span class="v" id="i-hostname">–</span></div>
+    <div class="info"><span class="k">IP-adres</span><span class="v" id="i-ip">–</span></div>
+    <div class="info"><span class="k">Besturingssysteem</span><span class="v" id="i-os">–</span></div>
+    <div class="info"><span class="k">Kernel</span><span class="v" id="i-kernel">–</span></div>
+    <div class="info"><span class="k">Processor</span><span class="v" id="i-cpu">–</span></div>
+    <div class="info"><span class="k">Belasting (1 / 5 / 15 min)</span><span class="v" id="i-load">–</span></div>
+    <div class="info"><span class="k">Systeem aan sinds</span><span class="v" id="i-uptime">–</span></div>
+    <div class="info"><span class="k">Weerstation actief</span><span class="v" id="i-app">–</span></div>
+    <div class="info"><span class="k">Weerdata bijgewerkt</span><span class="v" id="i-weather">–</span></div>
+    <div class="info"><span class="k">Python</span><span class="v" id="i-python">–</span></div>
+  </div>
+
+  <div class="sys-footer">tik om terug te gaan</div>
+
+</div><!-- #system-view -->
+
+
 <script>
   // ── Clock (updates every second) ───────────────────────────
   function tick() {
@@ -108,9 +156,78 @@
                     'augustus','september','oktober','november','december'];
     document.getElementById('main-date').textContent   = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
     document.getElementById('main-clock').textContent  = `${hh}:${mm}`;
+    document.getElementById('system-clock').textContent = `${hh}:${mm}`;
   }
   tick();
   setInterval(tick, 1000);
+
+  // ── System status page ─────────────────────────────────────
+  const CIRC = 2 * Math.PI * 82;          // ring circumference (r = 82)
+  let sysTimer = null, idleTimer = null;
+
+  function openSystem() {
+    document.getElementById('main-view').style.display   = 'none';
+    document.getElementById('system-view').style.display = 'flex';
+    refreshSystem();
+    sysTimer  = setInterval(refreshSystem, 2000);
+    idleTimer = setTimeout(closeSystem, 60000);   // back to weather after 1 min
+  }
+  function closeSystem() {
+    clearInterval(sysTimer); clearTimeout(idleTimer);
+    document.getElementById('system-view').style.display = 'none';
+    document.getElementById('main-view').style.display   = 'flex';
+  }
+
+  function fmtBytes(b) {
+    const gb = b / 1073741824;
+    return gb >= 100 ? gb.toFixed(0) + ' GB' : gb.toFixed(1) + ' GB';
+  }
+  function fmtDuration(s) {
+    if (s == null) return '–';
+    const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    return d ? `${d}d ${h}u ${m}m` : h ? `${h}u ${m}m` : `${m}m`;
+  }
+  function setGauge(id, pct, value, unit, sub) {
+    const g = document.getElementById('g-' + id);
+    const fg = g.querySelector('.ring-fg');
+    const has = pct != null;
+    const p = has ? Math.max(0, Math.min(100, pct)) : 0;
+    fg.style.strokeDasharray  = CIRC;
+    fg.style.strokeDashoffset = CIRC * (1 - p / 100);
+    g.classList.toggle('hot', has && p >= 85);
+    g.querySelector('.ring-value').textContent = has ? value : '–';
+    g.querySelector('.ring-unit').textContent  = has ? unit : '';
+    g.querySelector('.gauge-sub').textContent  = sub || ' ';
+  }
+  function setText(id, v) { document.getElementById(id).textContent = v == null ? '–' : v; }
+
+  async function refreshSystem() {
+    try {
+      const r = await fetch('/api/system', { cache: 'no-store' });
+      const d = await r.json();
+      setGauge('cpu', d.cpu_percent, Math.round(d.cpu_percent), '%',
+               d.cpu_cores ? d.cpu_cores + ' cores' : '');
+      const m = d.memory;
+      setGauge('mem', m && 100 * m.used / m.total, m && Math.round(100 * m.used / m.total), '%',
+               m && `${fmtBytes(m.used)} / ${fmtBytes(m.total)}`);
+      const k = d.disk;
+      setGauge('disk', k && 100 * k.used / k.total, k && Math.round(100 * k.used / k.total), '%',
+               k && `${fmtBytes(k.used)} / ${fmtBytes(k.total)}`);
+      setGauge('temp', d.temp, d.temp != null && Math.round(d.temp), '°C',
+               d.temp == null ? 'niet beschikbaar' : '');   // ring = 0–100 °C
+
+      setText('i-hostname', d.hostname);
+      setText('i-ip', d.ip);
+      setText('i-os', d.os);
+      setText('i-kernel', d.kernel);
+      setText('i-cpu', d.cpu_model);
+      setText('i-load', d.load && d.load.join(' / '));
+      setText('i-uptime', fmtDuration(d.uptime));
+      setText('i-app', fmtDuration(d.app_uptime));
+      setText('i-weather', d.weather_updated);
+      setText('i-python', d.python);
+    } catch (e) { /* keep last values; try again on next tick */ }
+  }
 
   // ── Auto-refresh (full page reload fetches fresh data) ─────
   setTimeout(() => location.reload(), {{ cfg.REFRESH_INTERVAL * 1000 }});
