@@ -9,6 +9,7 @@ Pi kiosk: chromium-browser --kiosk --noerrdialogs --disable-infobars http://loca
 import threading
 import time
 import config
+import netstatus
 import sysinfo
 import weather
 from flask import Flask, render_template, jsonify
@@ -122,6 +123,13 @@ def system():
     info["app_uptime"] = int(time.time() - _STARTED)
     info["refresh_interval"] = config.REFRESH_INTERVAL
     resp = jsonify(info)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/network")
+def network():
+    resp = jsonify(netstatus.snapshot(config.NETWORK_DEVICES))
     resp.headers["Cache-Control"] = "no-store"
     return resp
 

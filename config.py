@@ -8,6 +8,14 @@ REFRESH_INTERVAL = 600  # seconds between API calls
 FPS = 10
 WIND_WARN_KMH = 30  # wind tile turns red above this speed
 
+# --- Network page ---
+# Devices to monitor. Without "port" the host is pinged; with "port" a TCP
+# connection is tried instead (use this for hosts that block ping).
+NETWORK_DEVICES = [
+    # {"name": "NAS",     "host": "192.168.1.20"},
+    # {"name": "Printer", "host": "192.168.1.50", "port": 8883},
+]
+
 # --- Display ---
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 480

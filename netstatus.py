@@ -1,0 +1,136 @@
+"""
+Network status helpers — stdlib only.
+
+Reachability uses the system `ping`; devices with a "port" are probed with a TCP
+connect instead (a refused connection still counts as up: the host answered).
+Throughput and the default gateway come from /proc (Linux); both degrade to None.
+"""
+
+import re
+import shutil
+import socket
+import struct
+import subprocess
+import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+INTERNET_HOST = "1.1.1.1"
+CACHE_SECONDS = 3
+
+_PING = shutil.which("ping")
+_IS_WIN = sys.platform.startswith("win")
+_TIME_RE = re.compile(r"time[=<]\s*([\d.]+)\s*ms", re.I)
+
+_lock = threading.Lock()
+_cache = None
+_cache_ts = 0.0
+_prev_traffic = None   # (timestamp, iface, rx_bytes, tx_bytes)
+
+
+def tcp_probe(host, port, timeout=1.0):
+    """Latency in ms to a TCP port, or None. 'Connection refused' counts as up."""
+    start = time.perf_counter()
+    try:
+        socket.create_connection((host, port), timeout).close()
+    except ConnectionRefusedError:
+        pass
+    except OSError:
+        return None
+    return round((time.perf_counter() - start) * 1000, 1)
+
+
+def ping(host, timeout=1.0):
+    """Round-trip time in ms, or None if the host does not answer."""
+    if not _PING:
+        return tcp_probe(host, 80, timeout)
+    if _IS_WIN:
+        cmd = [_PING, "-n", "1", "-w", str(int(timeout * 1000)), host]
+    else:
+        cmd = [_PING, "-c", "1", "-W", str(max(1, int(timeout))), host]
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True,
+                             timeout=timeout + 1.5).stdout
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    m = _TIME_RE.search(out)
+    return float(m.group(1)) if m else None
+
+
+def _check(host, port=None):
+    return tcp_probe(host, port) if port else ping(host)
+
+
+def default_gateway():
+    """(interface, gateway ip) of the default route, or None."""
+    try:
+        with open("/proc/net/route") as f:
+            next(f)
+            for line in f:
+                iface, dest, gw = line.split()[:3]
+                if dest == "00000000":
+                    return iface, socket.inet_ntoa(struct.pack("<L", int(gw, 16)))
+    except (OSError, ValueError, StopIteration):
+        pass
+    return None
+
+
+def traffic(iface):
+    """Receive/transmit rate in bytes/s since the previous call."""
+    global _prev_traffic
+    if not iface:
+        return None
+    try:
+        with open("/proc/net/dev") as f:
+            for line in f:
+                name, _, rest = line.partition(":")
+                if name.strip() == iface:
+                    cols = rest.split()
+                    rx, tx = int(cols[0]), int(cols[8])
+                    break
+            else:
+                return None
+    except (OSError, ValueError, IndexError):
+        return None
+
+    now = time.time()
+    prev, _prev_traffic = _prev_traffic, (now, iface, rx, tx)
+    rate = {"iface": iface, "rx_bps": 0, "tx_bps": 0}
+    if prev and prev[1] == iface and now > prev[0]:
+        dt = now - prev[0]
+        rate["rx_bps"] = max(0, (rx - prev[2]) / dt)
+        rate["tx_bps"] = max(0, (tx - prev[3]) / dt)
+    return rate
+
+
+def snapshot(devices):
+    """Probe internet, gateway and configured devices (cached for a few seconds)."""
+    global _cache, _cache_ts
+    with _lock:
+        if _cache is not None and time.time() - _cache_ts < CACHE_SECONDS:
+            return _cache
+
+        gw = default_gateway()
+        with ThreadPoolExecutor(max_workers=12) as ex:
+            f_net = ex.submit(_check, INTERNET_HOST)
+            f_gw = ex.submit(_check, gw[1]) if gw else None
+            f_dev = [ex.submit(_check, d["host"], d.get("port")) for d in devices]
+            net_ms = f_net.result()
+            gw_ms = f_gw.result() if f_gw else None
+            dev_ms = [f.result() for f in f_dev]
+
+        _cache = {
+            "internet": {"up": net_ms is not None, "ms": net_ms, "host": INTERNET_HOST},
+            "gateway": {"ip": gw[1], "iface": gw[0], "up": gw_ms is not None,
+                        "ms": gw_ms} if gw else None,
+            "traffic": traffic(gw[0] if gw else None),
+            "devices": [
+                {"name": d["name"], "host": d["host"], "port": d.get("port"),
+                 "up": ms is not None, "ms": ms}
+                for d, ms in zip(devices, dev_ms)
+            ],
+            "checked": time.strftime("%H:%M:%S"),
+        }
+        _cache_ts = time.time()
+        return _cache

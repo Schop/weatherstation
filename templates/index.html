@@ -104,9 +104,14 @@
 
   <div class="sys-bar">
     <span class="back">← back</span>
-    <span class="title">System status</span>
+    <div class="tabs">
+      <span class="tab active" id="tab-system"  onclick="event.stopPropagation(); showTab('system')">System</span>
+      <span class="tab"        id="tab-network" onclick="event.stopPropagation(); showTab('network')">Network</span>
+    </div>
     <span class="sclock" id="system-clock"></span>
   </div>
+
+  <div class="tab-page" id="page-system">
 
   <div class="gauges">
     {% for g in [('cpu', 'Processor'), ('mem', 'Memory'), ('disk', 'Storage'), ('temp', 'Temperature')] %}
@@ -140,6 +145,36 @@
     <div class="info"><span class="k">Python</span><span class="v" id="i-python">–</span></div>
   </div>
 
+  </div><!-- #page-system -->
+
+  <div class="tab-page" id="page-network" style="display:none">
+
+    <div class="net-summary">
+      <div class="net-card" id="n-internet">
+        <span class="k">Internet</span>
+        <span class="big"><i class="dot"></i><span class="val">–</span></span>
+        <span class="sub">&nbsp;</span>
+      </div>
+      <div class="net-card" id="n-gateway">
+        <span class="k">Gateway</span>
+        <span class="big"><i class="dot"></i><span class="val">–</span></span>
+        <span class="sub">&nbsp;</span>
+      </div>
+      <div class="net-card" id="n-traffic">
+        <span class="k">Traffic</span>
+        <span class="big traffic"><span class="down">↓ –</span><span class="up">↑ –</span></span>
+        <span class="sub">&nbsp;</span>
+      </div>
+    </div>
+
+    <div class="net-head">
+      <span>Devices</span>
+      <span class="count" id="n-count"></span>
+    </div>
+    <div class="net-devices" id="n-devices"></div>
+
+  </div><!-- #page-network -->
+
   <div class="sys-footer">tap to go back</div>
 
 </div><!-- #system-view -->
@@ -163,19 +198,29 @@
 
   // ── System status page ─────────────────────────────────────
   const CIRC = 2 * Math.PI * 82;          // ring circumference (r = 82)
-  let sysTimer = null, idleTimer = null;
+  let sysTimer = null, idleTimer = null, currentTab = 'system';
 
   function openSystem() {
     document.getElementById('main-view').style.display   = 'none';
     document.getElementById('system-view').style.display = 'flex';
-    refreshSystem();
-    sysTimer  = setInterval(refreshSystem, 2000);
-    idleTimer = setTimeout(closeSystem, 60000);   // back to weather after 1 min
+    showTab(currentTab);
   }
   function closeSystem() {
     clearInterval(sysTimer); clearTimeout(idleTimer);
     document.getElementById('system-view').style.display = 'none';
     document.getElementById('main-view').style.display   = 'flex';
+  }
+  function showTab(tab) {
+    currentTab = tab;
+    for (const t of ['system', 'network']) {
+      document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    }
+    const refresh = tab === 'system' ? refreshSystem : refreshNetwork;
+    clearInterval(sysTimer); clearTimeout(idleTimer);
+    refresh();
+    sysTimer  = setInterval(refresh, tab === 'system' ? 2000 : 4000);
+    idleTimer = setTimeout(closeSystem, 60000);   // back to weather after 1 min
   }
 
   function fmtBytes(b) {
@@ -226,6 +271,67 @@
       setText('i-app', fmtDuration(d.app_uptime));
       setText('i-weather', d.weather_updated);
       setText('i-python', d.python);
+    } catch (e) { /* keep last values; try again on next tick */ }
+  }
+
+  // ── Network tab ────────────────────────────────────────────
+  function fmtRate(bps) {
+    if (bps == null) return '–';
+    if (bps >= 1048576) return (bps / 1048576).toFixed(1) + ' MB/s';
+    if (bps >= 1024)    return Math.round(bps / 1024) + ' KB/s';
+    return Math.round(bps) + ' B/s';
+  }
+  function setLink(card, up, label, sub) {
+    card.classList.toggle('up', up === true);
+    card.classList.toggle('down', up === false);
+    card.querySelector('.val').textContent = label;
+    card.querySelector('.sub').textContent = sub || ' ';
+  }
+
+  async function refreshNetwork() {
+    try {
+      const r = await fetch('/api/network', { cache: 'no-store' });
+      const d = await r.json();
+
+      const net = d.internet;
+      setLink(document.getElementById('n-internet'), net.up,
+              net.up ? 'Online' : 'Offline',
+              net.up ? `${Math.round(net.ms)} ms · ${net.host}` : `no reply from ${net.host}`);
+
+      const gw = d.gateway, gcard = document.getElementById('n-gateway');
+      if (gw) setLink(gcard, gw.up, gw.ip, gw.up ? `${Math.round(gw.ms)} ms · ${gw.iface}` : 'no reply');
+      else    setLink(gcard, null, '–', 'not available');
+
+      const t = d.traffic, tcard = document.getElementById('n-traffic');
+      tcard.querySelector('.down').textContent = '↓ ' + (t ? fmtRate(t.rx_bps) : '–');
+      tcard.querySelector('.up').textContent   = '↑ ' + (t ? fmtRate(t.tx_bps) : '–');
+      tcard.querySelector('.sub').textContent  = t ? t.iface : 'not available';
+
+      const box = document.getElementById('n-devices');
+      box.replaceChildren();
+      for (const dev of d.devices) {
+        const el  = document.createElement('div');
+        el.className = 'device ' + (dev.up ? 'up' : 'down');
+        const dot = document.createElement('i');    dot.className = 'dot';
+        const txt = document.createElement('div');  txt.className = 'dev-text';
+        const nm  = document.createElement('span'); nm.className = 'dev-name'; nm.textContent = dev.name;
+        const ad  = document.createElement('span'); ad.className = 'dev-addr';
+        ad.textContent = dev.host + (dev.port ? ':' + dev.port : '');
+        txt.append(nm, ad);
+        const ms  = document.createElement('span'); ms.className = 'dev-ms';
+        ms.textContent = dev.up ? Math.round(dev.ms) + ' ms' : 'offline';
+        el.append(dot, txt, ms);
+        box.append(el);
+      }
+      const up = d.devices.filter(x => x.up).length;
+      document.getElementById('n-count').textContent =
+        d.devices.length ? `${up} of ${d.devices.length} online` : '';
+      if (!d.devices.length) {
+        const hint = document.createElement('div');
+        hint.className = 'net-empty';
+        hint.textContent = 'No devices configured — add them to NETWORK_DEVICES in config.py';
+        box.append(hint);
+      }
     } catch (e) { /* keep last values; try again on next tick */ }
   }
 

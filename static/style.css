@@ -392,3 +392,129 @@ body {
   font-size: 18px;
   color: #C0B0A0;
 }
+
+/* ── Tabs (system / network) ────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  background: #E4DDD2;
+  border-radius: 16px;
+}
+
+.tab {
+  padding: 8px 30px;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #9A8A78;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.tab.active {
+  background: #F8F5F0;
+  color: #262320;
+  box-shadow: 0 1px 3px rgba(60, 45, 30, 0.15);
+}
+
+.tab-page {
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+#page-system { display: flex; }
+
+/* ── Network page ───────────────────────────────────── */
+.net-summary {
+  height: 170px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 24px 40px 0;
+}
+
+.net-card {
+  background: #EEEAE2;
+  border-radius: 20px;
+  padding: 0 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.net-card .k   { font-size: 18px; font-weight: 600; color: #9A8A78; letter-spacing: 0.3px; }
+.net-card .big {
+  display: flex; align-items: center; gap: 14px;
+  font-size: 40px; font-weight: 700; color: #262320;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.net-card .sub { font-size: 17px; font-weight: 600; color: #9A8A78; font-variant-numeric: tabular-nums; }
+
+.big.traffic { gap: 28px; font-size: 32px; }
+.big.traffic .down { color: #4180C8; }
+.big.traffic .up   { color: #D47820; }
+
+/* status dot: muted green when up, muted red when down */
+.dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #C9C0B3;
+  flex-shrink: 0;
+}
+.up   .dot { background: #5E9E6E; box-shadow: 0 0 0 5px rgba(94, 158, 110, 0.18); }
+.down .dot { background: #B85C50; box-shadow: 0 0 0 5px rgba(184, 92, 80, 0.18); }
+.net-card.down .val { color: #B85C50; }
+
+.net-head {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 26px 44px 10px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #262320;
+}
+.net-head .count { font-size: 18px; font-weight: 600; color: #9A8A78; }
+
+.net-devices {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 78px;
+  gap: 14px 20px;
+  padding: 0 40px;
+  align-content: start;
+}
+
+.device {
+  background: #EEEAE2;
+  border-radius: 16px;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dev-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.dev-name { font-size: 22px; font-weight: 700; color: #262320; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-addr { font-size: 15px; font-weight: 600; color: #9A8A78; font-variant-numeric: tabular-nums; }
+.dev-ms   { font-size: 18px; font-weight: 700; color: #9A8A78; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.device.down .dev-ms   { color: #B85C50; }
+.device.down .dev-name { color: #8A7E70; }
+
+.net-empty {
+  grid-column: 1 / -1;
+  padding: 30px 0;
+  text-align: center;
+  font-size: 18px;
+  color: #B0A090;
+}
