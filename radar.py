@@ -56,14 +56,14 @@ def _parse_rain(text):
 def _summary(points):
     wet = [p["mm"] >= WET_MM for p in points]
     if not any(wet):
-        return "dry", "Dry for the next 2 hours"
+        return "dry", "Droog de komende 2 uur"
     if wet[0]:
         for i, w in enumerate(wet):
             if not w:
-                return "wet", f"Raining, dry from {points[i]['t']}"
-        return "wet", "Rain for the next 2 hours"
+                return "wet", f"Het regent, droog vanaf {points[i]['t']}"
+        return "wet", "Regen de komende 2 uur"
     first = wet.index(True)
-    return "soon", f"Rain from {points[first]['t']}"
+    return "soon", f"Regen vanaf {points[first]['t']}"
 
 
 def rain_forecast(lat, lon):

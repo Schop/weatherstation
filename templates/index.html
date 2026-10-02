@@ -233,18 +233,18 @@
 
       <div class="rd-map">
         <iframe id="rd-frame" scrolling="no" tabindex="-1"></iframe>
-        <div class="rd-caption">Buienradar · rain radar around {{ cfg.LOCATION_NAME }}</div>
+        <div class="rd-caption">Buienradar · regenradar rond {{ cfg.LOCATION_NAME }}</div>
       </div>
 
       <div class="rd-side">
         <div class="rd-summary" id="rd-summary">
-          <span class="tile-label">Next 2 hours · {{ cfg.LOCATION_NAME }}</span>
+          <span class="tile-label">Komende 2 uur · {{ cfg.LOCATION_NAME }}</span>
           <span class="rd-text">–</span>
         </div>
 
         <div class="rd-chart-card">
           <div class="rd-chart" id="rd-chart">
-            <div class="rd-grid"><span style="bottom:14%">light</span><span style="bottom:45%">moderate</span><span style="bottom:100%">heavy</span></div>
+            <div class="rd-grid"><span style="bottom:14%">licht</span><span style="bottom:45%">matig</span><span style="bottom:100%">zwaar</span></div>
             <div class="rd-bars" id="rd-bars"></div>
           </div>
           <div class="rd-axis" id="rd-axis"></div>
@@ -519,7 +519,7 @@
       const axis = document.getElementById('rd-axis');
       if (!d.points) {
         sum.className = 'rd-summary';
-        sum.querySelector('.rd-text').textContent = 'Rain forecast unavailable';
+        sum.querySelector('.rd-text').textContent = 'Regenverwachting niet beschikbaar';
         return;
       }
       sum.className = 'rd-summary ' + d.state;
