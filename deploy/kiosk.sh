@@ -16,4 +16,6 @@ exec "$CHROMIUM" --kiosk --noerrdialogs --disable-infobars \
     --disable-session-crashed-bubble --disk-cache-size=1 \
     --ozone-platform-hint=auto --cursor=none \
     --password-store=basic \
+    --user-data-dir="$HOME/.config/weatherstation-chromium" \
+    --no-first-run --disable-features=Translate \
     http://localhost:5000

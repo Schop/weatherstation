@@ -68,6 +68,8 @@ fi
 if command -v kwriteconfig6 >/dev/null; then
     sudo -u "$APP_USER" kwriteconfig6 --file kscreenlockerrc --group Daemon --key Autolock false
     sudo -u "$APP_USER" kwriteconfig6 --file kscreenlockerrc --group Daemon --key LockOnResume false
+    # Don't restore last session's apps (e.g. a normal Chromium window) at login
+    sudo -u "$APP_USER" kwriteconfig6 --file ksmserverrc --group General --key loginMode emptySession
 fi
 
 echo "Installed for user '$APP_USER' from $APP_DIR."
