@@ -20,25 +20,32 @@ _state = "loading"   # "loading" | "ok" | "error"
 
 
 # ---------------------------------------------------------------------------
-# Icon mapping (emoji — rendered natively by Chromium / Noto Color Emoji)
+# Icon mapping (Weather Icons font — static/style.css maps classes to glyphs)
 # ---------------------------------------------------------------------------
 
-_ICON_EMOJI = {
-    "clear_day":     "☀️",
-    "clear_night":   "🌙",
-    "partly_cloudy": "⛅",
-    "cloudy":        "☁️",
-    "fog":           "🌫️",
-    "drizzle":       "🌦️",
-    "rain":          "🌧️",
-    "snow":          "❄️",
-    "sleet":         "🌨️",
-    "storm":         "⛈️",
+_ICON_CLASS = {
+    "clear_day":     "wi-day-sunny",
+    "clear_night":   "wi-night-clear",
+    "partly_cloudy": "wi-day-cloudy",
+    "cloudy":        "wi-cloudy",
+    "fog":           "wi-fog",
+    "drizzle":       "wi-sprinkle",
+    "rain":          "wi-rain",
+    "snow":          "wi-snow",
+    "sleet":         "wi-sleet",
+    "storm":         "wi-thunderstorm",
 }
 
 
-def icon_emoji(icon_type):
-    return _ICON_EMOJI.get(icon_type, "☁️")
+_DAY_SHORT = {
+    "Monday": "Maandag", "Tuesday": "Dinsdag", "Wednesday": "Woensdag",
+    "Thursday": "Donderdag", "Friday": "Vrijdag", "Saturday": "Zaterdag",
+    "Sunday": "Zondag",
+}
+
+
+def icon_class(icon_type):
+    return _ICON_CLASS.get(icon_type, "wi-cloudy")
 
 
 # ---------------------------------------------------------------------------
@@ -75,21 +82,19 @@ def index():
         return render_template("index.html",
                                data=None, state=state, cfg=config,
                                main_icon="",
-                               strip_hourly=[], strip_tomorrow=None,
-                               hourly_items=[])
+                               strip_hourly=[], daily_items=[])
 
-    # Bottom strip: next 4 hours + tomorrow
+    # Main page: next 8 hours
     strip_hourly = [
-        {"hour": h, "icon": icon_emoji(h.icon_type)}
-        for h in data.hourly[1:5]
+        {"hour": h, "icon": icon_class(h.icon_type)}
+        for h in data.hourly[1:9]
     ]
-    tomorrow = data.forecast[1] if len(data.forecast) > 1 else None
-    strip_tomorrow = {"day": tomorrow, "icon": icon_emoji(tomorrow.icon_type)} if tomorrow else None
 
-    # Hourly detail page (10 hours from now)
-    hourly_items = [
-        {"hour": h, "icon": icon_emoji(h.icon_type)}
-        for h in data.hourly[:10]
+    # Main page: 7-day forecast
+    daily_items = [
+        {"day": d, "icon": icon_class(d.icon_type),
+         "label": "Vandaag" if i == 0 else _DAY_SHORT.get(d.day_name, d.day_name)}
+        for i, d in enumerate(data.forecast[:7])
     ]
 
     return render_template(
@@ -97,10 +102,9 @@ def index():
         data=data,
         state=state,
         cfg=config,
-        main_icon=icon_emoji(data.icon_type),
+        main_icon=icon_class(data.icon_type),
         strip_hourly=strip_hourly,
-        strip_tomorrow=strip_tomorrow,
-        hourly_items=hourly_items,
+        daily_items=daily_items,
     )
 
 

@@ -1,32 +1,61 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* ── Weather Icons (Erik Flowers, SIL OFL 1.1) ─────────── */
+@font-face {
+  font-family: 'weathericons';
+  src: url('fonts/weathericons-regular-webfont.woff2') format('woff2'),
+       url('fonts/weathericons-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.wi {
+  font-family: 'weathericons';
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  display: inline-block;
+  color: #6B6258;           /* single muted tone for every icon */
+}
+.wi-day-sunny:before       { content: "\f00d"; }
+.wi-night-clear:before     { content: "\f02e"; }
+.wi-day-cloudy:before      { content: "\f002"; }
+.wi-cloudy:before          { content: "\f013"; }
+.wi-fog:before             { content: "\f014"; }
+.wi-sprinkle:before        { content: "\f01c"; }
+.wi-rain:before            { content: "\f019"; }
+.wi-snow:before            { content: "\f01b"; }
+.wi-sleet:before           { content: "\f0b5"; }
+.wi-thunderstorm:before    { content: "\f01e"; }
+
+/* Designed for a 1280 x 800 display */
 body {
-  width: 800px;
-  height: 480px;
+  width: 1280px;
+  height: 800px;
   overflow: hidden;
   background: #F8F5F0;
   font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
-  color: #262320;
+  color: #6B6258;
   -webkit-font-smoothing: antialiased;
 }
 
 /* ── Full-screen page views ───────────────────────────── */
-#main-view, #hourly-view {
+#main-view {
   position: absolute;
   inset: 0;
-  width: 800px;
-  height: 480px;
+  width: 1280px;
+  height: 800px;
   display: flex;
   flex-direction: column;
 }
 
 /* ── Top bar ─────────────────────────────────────────── */
 .top-bar {
-  height: 55px;
+  height: 84px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 40px;
   flex-shrink: 0;
   border-bottom: 1px solid #E0D8CE;
 }
@@ -34,37 +63,31 @@ body {
 .top-bar-left {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: 20px;
 }
 
-.clock {
-  font-size: 28px;
+.clock, .date, .location {
+  font-size: 44px;
   font-weight: 700;
-  color: #262320;
-  font-variant-numeric: tabular-nums;
+  color: #6B6258;
 }
 
-.date {
-  font-size: 28px;
-  font-weight: 700;
-  color: #262320;
-}
+.clock { font-variant-numeric: tabular-nums; }
 
-.location {
-  font-size: 28px;
-  font-weight: 700;
-  color: #262320;
-}
+.date { color: #6B6258; font-weight: 600; }
 
 /* ── Main content ───────────────────────────────────── */
 .main-content {
-  height: 250px;
+  height: 346px;
   flex-shrink: 0;
   display: flex;
+  align-items: center;
+  padding: 0 40px;
+  gap: 24px;
 }
 
 .hero {
-  width: 250px;
+  width: 260px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -72,70 +95,95 @@ body {
 }
 
 .hero .icon {
-  font-size: 115px;
+  font-size: 150px;
   line-height: 1;
 }
 
 .weather-info {
-  flex: 1;
-  padding: 22px 12px 14px 12px;
+  width: 380px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
 
 .temp {
-  font-size: 76px;
-  font-weight: 700;
+  font-size: 100px;
+  font-weight: 600;
   line-height: 1;
-  color: #1E1C1A;
+  color: #6B6258;
 }
 
-.condition, .precip-main, .feels {
-  font-size: 22px;
+.condition, .feels {
+  font-size: 34px;
   color: #9A8A78;
-  margin-top: 6px;
+  margin-top: 10px;
   font-weight: 600;
 }
 
+.precip-main { color: #9A8A78; font-weight: 600; margin-top: 6px; font-size: 28px; }
 .precip-main.wet { color: #4B8CD7; }
 
-/* ── Stats panel (right column) ─────────────────────── */
-.stats-panel {
-  width: 215px;
-  flex-shrink: 0;
-  padding: 22px 20px 14px 8px;
+.feels { font-size: 28px; margin-top: 6px; }
+
+/* ── Stats grid (2 x 2 tiles) ───────────────────────── */
+.stats-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 14px;
+  height: 270px;
+}
+
+.tile {
+  background: #EEEAE2;
+  border-radius: 16px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
-.stat-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.stat {
-  font-size: 22px;
+.tile-label {
+  font-size: 18px;
   font-weight: 600;
+  color: #9A8A78;
+  letter-spacing: 0.3px;
+}
+
+.tile-value {
+  font-size: 40px;
+  font-weight: 700;
+  color: #6B6258;
   white-space: nowrap;
 }
 
-.stat.sunrise  { color: #D4A030; }
-.stat.sunset   { color: #8888B8; }
-.stat.humidity { color: #9A8A78; }
-.stat.wind     { color: #9A8A78; }
-.stat.precip   { color: #B0A090; }
-.stat.precip.wet { color: #4B8CD7; }
+.tile-value small {
+  font-size: 20px;
+  font-weight: 600;
+  color: #9A8A78;
+}
 
-/* ── Forecast strip ─────────────────────────────────── */
-#forecast {
-  flex: 1;
+.tile.sunrise .tile-value { color: #D4A030; }
+.tile.sunset  .tile-value { color: #8888B8; }
+
+/* ── Forecast strips ────────────────────────────────── */
+.strip {
   display: flex;
   border-top: 1px solid #E0D8CE;
-  cursor: pointer;
   position: relative;
   overflow: hidden;
   user-select: none;
+}
+
+#hourly-strip {
+  height: 190px;
+  flex-shrink: 0;
+}
+
+#daily-strip {
+  flex: 1;
+  background: #EEEAE2;
 }
 
 .strip-card {
@@ -144,66 +192,48 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: space-evenly;
-  padding: 12px 0 10px;
-  transition: background 0.15s;
-}
-
-
-.strip-card.tomorrow {
+  padding: 10px 0;
 }
 
 .strip-card .icon {
-  font-size: 52px;
+  font-size: 46px;
   line-height: 1;
 }
 
+#daily-strip .strip-card { border-right: 1px solid #E0D8CE; }
+#daily-strip .strip-card:last-child { border-right: none; }
+#daily-strip .strip-card .icon { font-size: 36px; }
+
 .strip-label {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: #9A8A78;
   letter-spacing: 0.4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .strip-temp {
-  font-size: 20px;
+  font-size: 30px;
   font-weight: 700;
   color: #1E1C1A;
 }
 
 .strip-temps {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: baseline;
 }
 
-.strip-hi {
-  font-size: 20px;
-  font-weight: 700;
-  color: #CD5537;
-}
-
-.strip-lo {
-  font-size: 15px;
-  font-weight: 600;
-  color: #4180C8;
-}
+.strip-hi { font-size: 32px; font-weight: 700; color: #CD5537; }
+.strip-lo { font-size: 24px; font-weight: 600; color: #4180C8; }
 
 .strip-precip {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
-  color: #9A8A78;
+  color: #B0A090;
 }
 
 .strip-precip.wet { color: #4B8CD7; }
-
-.tap-hint {
-  position: absolute;
-  bottom: 6px;
-  right: 10px;
-  font-size: 11px;
-  color: #C0B0A0;
-  pointer-events: none;
-}
 
 /* ── State overlays ─────────────────────────────────── */
 #overlay {
@@ -214,11 +244,11 @@ body {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 #overlay .msg {
-  font-size: 26px;
+  font-size: 44px;
   font-weight: 600;
 }
 
@@ -226,108 +256,6 @@ body {
 #overlay .msg.error   { color: #C84040; }
 
 #overlay .sub {
-  font-size: 16px;
+  font-size: 24px;
   color: #9A8A78;
-}
-
-/* ── Hourly page ────────────────────────────────────── */
-#hourly-view { display: none; }
-
-.hourly-bar {
-  height: 55px;
-  background: #EEE9E2;
-  border-bottom: 1px solid #E0D8CE;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-}
-
-.hourly-bar .back {
-  font-size: 14px;
-  font-weight: 600;
-  color: #D47820;
-  margin-right: auto;
-}
-
-.hourly-bar .title {
-  font-size: 19px;
-  font-weight: 700;
-  color: #262320;
-}
-
-.hourly-bar .hclock {
-  font-size: 17px;
-  font-weight: 600;
-  color: #9A8A78;
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-}
-
-.hourly-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-}
-
-.hour-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-evenly;
-  padding: 10px 0;
-  border-right: 1px solid #E0D8CE;
-}
-
-.hour-card:nth-child(5),
-.hour-card:nth-child(10) { border-right: none; }
-
-.hour-card:nth-child(6),
-.hour-card:nth-child(7),
-.hour-card:nth-child(8),
-.hour-card:nth-child(9),
-.hour-card:nth-child(10) {
-  border-top: 1px solid #E0D8CE;
-}
-
-.hour-card:nth-child(even) { background: #EEE9E2; }
-
-.hour-card .icon {
-  font-size: 62px;
-  line-height: 1;
-}
-
-.hour-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #9A8A78;
-  font-variant-numeric: tabular-nums;
-}
-
-.hour-temp {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1E1C1A;
-}
-
-.hour-precip {
-  font-size: 13px;
-  font-weight: 600;
-  color: #C0B0A0;
-}
-
-.hour-precip.wet { color: #4B8CD7; }
-
-.hourly-footer {
-  height: 35px;
-  background: #EEE9E2;
-  border-top: 1px solid #E0D8CE;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  color: #C0B0A0;
-  cursor: pointer;
 }

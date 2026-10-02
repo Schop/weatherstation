@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=800">
+  <meta name="viewport" content="width=1280">
   <title>Weather Station</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +27,7 @@
   {% if data %}
   <div class="main-content">
 
-    <div class="hero"><span class="icon">{{ main_icon }}</span></div>
+    <div class="hero"><i class="icon wi {{ main_icon }}"></i></div>
 
     <div class="weather-info">
       <div class="temp">{{ data.temp | round | int }}°C</div>
@@ -36,42 +36,50 @@
       <div class="feels">Voelt als {{ data.feels_like | round | int }}°C</div>
     </div>
 
-    <div class="stats-panel">
-      <div class="stat-row">
-        <span class="stat sunrise">↑ {{ data.sunrise }}</span>
-        <span class="stat sunset">↓ {{ data.sunset }}</span>
+    <div class="stats-grid">
+      <div class="tile sunrise">
+        <span class="tile-label">Zonsopkomst</span>
+        <span class="tile-value">↑ {{ data.sunrise }}</span>
       </div>
-      <div class="stat-row">
-        <span class="stat humidity">Vochtigheid: {{ data.humidity }}%&thinsp;</span>
+      <div class="tile sunset">
+        <span class="tile-label">Zonsondergang</span>
+        <span class="tile-value">↓ {{ data.sunset }}</span>
       </div>
-      <div class="stat-row">
-        <span class="stat wind">Wind: {{ data.wind_speed | round | int }}&thinsp;km/u {{ data.wind_dir_label }}</span>
+      <div class="tile">
+        <span class="tile-label">Vochtigheid</span>
+        <span class="tile-value">{{ data.humidity }}%</span>
+      </div>
+      <div class="tile">
+        <span class="tile-label">Wind</span>
+        <span class="tile-value">{{ data.wind_speed | round | int }} <small>km/u {{ data.wind_dir_label }}</small></span>
       </div>
     </div>
 
   </div><!-- .main-content -->
 
-  <div id="forecast" onclick="openHourly()">
+  <div id="hourly-strip" class="strip">
     {% for item in strip_hourly %}
     <div class="strip-card">
       <div class="strip-label">{{ item.hour.hour_label }}</div>
-      <span class="icon">{{ item.icon }}</span>
+      <i class="icon wi {{ item.icon }}"></i>
       <div class="strip-temp">{{ item.hour.temp | round | int }}°</div>
       <div class="strip-precip{% if item.hour.precip_prob > 0 %} wet{% endif %}">{{ item.hour.precip_prob }}%</div>
     </div>
     {% endfor %}
-    {% if strip_tomorrow %}
-    <div class="strip-card tomorrow">
-      <div class="strip-label">Morgen</div>
-      <span class="icon">{{ strip_tomorrow.icon }}</span>
+  </div>
+
+  <div id="daily-strip" class="strip">
+    {% for item in daily_items %}
+    <div class="strip-card">
+      <div class="strip-label">{{ item.label }}</div>
+      <i class="icon wi {{ item.icon }}"></i>
       <div class="strip-temps">
-        <span class="strip-hi">{{ strip_tomorrow.day.temp_max | round | int }}°</span>
-        <span class="strip-lo">{{ strip_tomorrow.day.temp_min | round | int }}°</span>
+        <span class="strip-hi">{{ item.day.temp_max | round | int }}°</span>
+        <span class="strip-lo">{{ item.day.temp_min | round | int }}°</span>
       </div>
-      <div class="strip-precip{% if strip_tomorrow.day.precip_prob > 0 %} wet{% endif %}">{{ strip_tomorrow.day.precip_prob }}%</div>
+      <div class="strip-precip{% if item.day.precip_prob > 0 %} wet{% endif %}">{{ item.day.precip_prob }}%</div>
     </div>
-    {% endif %}
-    
+    {% endfor %}
   </div>
 
   {% else %}
@@ -89,35 +97,6 @@
 </div><!-- #main-view -->
 
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- HOURLY PAGE                                                -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div id="hourly-view" onclick="closeHourly()">
-
-  <div class="hourly-bar">
-    <span class="back">← terug</span>
-    <span class="title">Uurverwachting</span>
-    <span class="hclock" id="hourly-clock"></span>
-  </div>
-
-  <div class="hourly-grid">
-    {% for item in hourly_items %}
-    <div class="hour-card">
-      <div class="hour-label">{{ item.hour.hour_label }}</div>
-      <span class="icon">{{ item.icon }}</span>
-      <div class="hour-temp">{{ item.hour.temp | round | int }}°C</div>
-      <div class="hour-precip{% if item.hour.precip_prob > 0 %} wet{% endif %}">
-        {{ item.hour.precip_prob }}%
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-
-  <div class="hourly-footer">tik om terug te gaan</div>
-
-</div><!-- #hourly-view -->
-
-
 <script>
   // ── Clock (updates every second) ───────────────────────────
   function tick() {
@@ -129,20 +108,9 @@
                     'augustus','september','oktober','november','december'];
     document.getElementById('main-date').textContent   = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
     document.getElementById('main-clock').textContent  = `${hh}:${mm}`;
-    document.getElementById('hourly-clock').textContent = `${hh}:${mm}`;
   }
   tick();
   setInterval(tick, 1000);
-
-  // ── Page navigation ────────────────────────────────────────
-  function openHourly() {
-    document.getElementById('main-view').style.display   = 'none';
-    document.getElementById('hourly-view').style.display = 'flex';
-  }
-  function closeHourly() {
-    document.getElementById('hourly-view').style.display = 'none';
-    document.getElementById('main-view').style.display   = 'flex';
-  }
 
   // ── Auto-refresh (full page reload fetches fresh data) ─────
   setTimeout(() => location.reload(), {{ cfg.REFRESH_INTERVAL * 1000 }});

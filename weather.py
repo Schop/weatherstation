@@ -148,7 +148,7 @@ def parse_weather(raw):
     precip_prob = int(h_precip[hour_idx]) if hour_idx < len(h_precip) else 0
 
     hourly = []
-    for i in range(hour_idx, min(hour_idx + 10, len(h_times))):
+    for i in range(hour_idx, min(hour_idx + 12, len(h_times))):
         h_code = h_codes[i]  if i < len(h_codes)  else 0
         h_day  = bool(h_is_day[i]) if i < len(h_is_day) else True
         _, h_icon = wmo_to_info(h_code, h_day)
