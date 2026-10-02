@@ -102,7 +102,7 @@ def index():
     daily_items = [
         {"day": d, "icon": icon_class(d.icon_type),
          "label": "Vandaag" if i == 0 else _DAY_SHORT.get(d.day_name, d.day_name)}
-        for i, d in enumerate(data.forecast[:7])
+        for i, d in enumerate(data.forecast[:6])
     ]
 
     return render_template(
