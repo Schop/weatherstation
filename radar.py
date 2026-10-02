@@ -1,7 +1,7 @@
 """
-Buienradar data: 5-minute rain forecast for the configured location and the
-animated rain radar image. Both are cached so repeated page opens are cheap and
-a short outage serves the last good data.
+Buienradar 5-minute rain forecast for the configured location. The result is
+cached so repeated page opens are cheap and a short outage serves the last good
+data. (The radar map itself is Buienradar's embeddable widget, loaded by the page.)
 """
 
 import sys
@@ -10,11 +10,8 @@ import time
 import urllib.request
 
 RAIN_URL = "https://gpsgadget.buienradar.nl/data/raintext?lat={lat:.2f}&lon={lon:.2f}"
-GIF_URL = ("https://image.buienradar.nl/2.0/image/animation/RadarMapRainNL"
-           "?width=550&height=512&renderBackground=True&renderBranding=False&renderText=True")
 
 RAIN_TTL = 120     # seconds
-GIF_TTL = 300
 WET_MM = 0.1       # mm/h at or above this counts as rain
 
 _lock = threading.Lock()
@@ -80,7 +77,3 @@ def rain_forecast(lat, lon):
                 "updated": time.strftime("%H:%M")}
     return _cached("rain", RAIN_TTL, load)
 
-
-def radar_gif():
-    """Animated radar GIF as bytes, or None."""
-    return _cached("gif", GIF_TTL, lambda: _get(GIF_URL))

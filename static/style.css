@@ -652,12 +652,13 @@ body {
   justify-content: space-between;
 }
 
-.rd-map img {
-  width: 560px;
-  height: 521px;               /* source image is 550 x 512 */
+.rd-map iframe {
+  width: 550px;                /* the widget's native "large" size */
+  height: 512px;
+  border: 0;
   border-radius: 14px;
   background: #DDD5CA;
-  object-fit: cover;
+  pointer-events: none;        /* taps fall through (the widget links to buienradar.nl) */
 }
 
 .rd-caption { font-size: 15px; font-weight: 600; color: #B0A090; }

@@ -8,6 +8,11 @@ REFRESH_INTERVAL = 600  # seconds between API calls
 FPS = 10
 WIND_WARN_KMH = 30  # wind tile turns red above this speed
 
+# --- Rain radar ---
+# Zoom of Buienradar's map widget: 6 = whole region, 8 = ~200 km wide,
+# 11 = ~100 km, 13 = local. (These are the widget's own zoom codes.)
+RADAR_ZOOM = 8
+
 # --- 3D printer (Bambu Lab, LAN) ---
 # Put BAMBU_SERIAL and BAMBU_ACCESS_CODE in config_local.py (git-ignored),
 # not here: the access code is a credential and this repo is on GitHub.

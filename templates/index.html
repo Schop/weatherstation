@@ -16,7 +16,7 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div id="main-view">
 
-  <div class="top-bar" onclick="openSystem()">
+  <div class="top-bar" onclick="openSystem('system')">
     <div class="top-bar-left">
       <div class="clock" id="main-clock"></div>
       <div class="date" id="main-date"></div>
@@ -25,7 +25,7 @@
   </div>
 
   {% if data %}
-  <div class="main-content">
+  <div class="main-content" onclick="openSystem('radar')">
 
     <div class="hero"><i class="icon wi {{ main_icon }}"></i></div>
 
@@ -232,8 +232,8 @@
     <div class="rd-layout">
 
       <div class="rd-map">
-        <img id="rd-img" alt="Rain radar">
-        <div class="rd-caption">Buienradar · rain radar, 5-minute steps</div>
+        <iframe id="rd-frame" scrolling="no" tabindex="-1"></iframe>
+        <div class="rd-caption">Buienradar · rain radar around {{ cfg.LOCATION_NAME }}</div>
       </div>
 
       <div class="rd-side">
@@ -279,10 +279,10 @@
   const CIRC = 2 * Math.PI * 82;          // ring circumference (r = 82)
   let sysTimer = null, idleTimer = null, currentTab = 'system';
 
-  function openSystem() {
+  function openSystem(tab) {
     document.getElementById('main-view').style.display   = 'none';
     document.getElementById('system-view').style.display = 'flex';
-    showTab(currentTab);
+    showTab(tab || currentTab);
   }
   function closeSystem() {
     clearInterval(sysTimer); clearTimeout(idleTimer);
@@ -497,14 +497,19 @@
   function setTile(id, v) { document.querySelector('#' + id + ' .tile-value').textContent = v; }
 
   // ── Radar tab ──────────────────────────────────────────────
-  let radarImgLoaded = 0;
+  let radarLoaded = 0;
   const RAIN_SCALE_MM = 5;     // bar height is sqrt-scaled; 5 mm/h = full height
+  const RADAR = { lat: {{ cfg.LATITUDE }}, lng: {{ cfg.LONGITUDE }}, zoom: {{ cfg.RADAR_ZOOM }},
+                  name: {{ cfg.LOCATION_NAME | tojson }} };
 
   async function refreshRadar() {
-    // Reload the animated map when the tab opens and then every 5 minutes (restarts the loop)
-    if (Date.now() - radarImgLoaded > 300000) {
-      document.getElementById('rd-img').src = '/api/radar.gif?t=' + Date.now();
-      radarImgLoaded = Date.now();
+    // Buienradar's zoom-map widget (Leaflet, animated). Reload when the tab opens and
+    // then every 5 minutes: the widget does not refresh its own imagery.
+    if (Date.now() - radarLoaded > 300000) {
+      const q = new URLSearchParams({ lat: RADAR.lat, lng: RADAR.lng, overname: 2, zoom: RADAR.zoom,
+                                      naam: RADAR.name, size: 3, voor: 2, _: Date.now() });
+      document.getElementById('rd-frame').src = 'https://gadgets.buienradar.nl/gadget/zoommap/?' + q;
+      radarLoaded = Date.now();
     }
     try {
       const r = await fetch('/api/rain', { cache: 'no-store' });
