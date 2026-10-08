@@ -355,7 +355,21 @@ body {
   padding: 0 40px;
 }
 
-.sys-bar .back  { font-size: 22px; font-weight: 600; color: var(--accent); margin-right: auto; }
+/* home button: same round chip style as the cogwheel tile on the Home page */
+.home-btn {
+  width: 56px;
+  height: 56px;
+  margin-right: auto;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.home-btn svg { width: 30px; height: 30px; fill: var(--accent); }
+.home-btn:active { background: var(--line-strong); }
 .sys-bar .title { font-size: 34px; font-weight: 700; color: var(--text); }
 .sys-bar .sclock {
   font-size: 30px; font-weight: 600; color: var(--text-2); margin-left: auto;
@@ -449,16 +463,6 @@ body {
   font-size: 20px; font-weight: 700; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
-
-.sys-footer {
-  height: 52px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: var(--text-3);
 }
 
 /* ── Tabs (system / network) ────────────────────────── */
@@ -1029,3 +1033,43 @@ body {
 .pw-graph-head .count { font-size: 14px; font-weight: 600; color: var(--text-2); }
 .pw-graph svg { flex: 1; min-height: 0; width: 100%; }
 .pw-axis { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+/* ── Speed test: button in the Internet card, result + history in its own card ── */
+.net-card { position: relative; }
+.speed-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #1A1408;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.speed-btn:active { filter: brightness(0.85); }
+.speed-btn:disabled { background: var(--track); color: var(--text-2); cursor: default; }
+
+#n-speed .big { gap: 22px; }
+#n-speed .down { color: var(--blue); }
+#n-speed .up   { color: var(--accent); }
+#n-speed.busy .big { opacity: 0.45; }
+
+/* history strip: bars along the right edge of the card */
+.speed-hist {
+  position: absolute;
+  right: 16px;
+  top: 12px;
+  bottom: 12px;
+  width: 120px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+.speed-hist i { flex: 1; min-width: 2px; border-radius: 2px 2px 0 0; background: var(--line-strong); }
+.speed-hist i.latest { background: var(--blue); }

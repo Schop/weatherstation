@@ -143,16 +143,18 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- SYSTEM STATUS PAGE                                         -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<div id="system-view" onclick="closeSystem()">
+<div id="system-view">
 
   <div class="sys-bar">
-    <span class="back">← back</span>
+    <button class="home-btn" onclick="closeSystem()" aria-label="Home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 11.2h2.7V20h5.3v-5.6h3V20h5.3v-8.8h2.7z"/></svg>
+    </button>
     <div class="tabs">
-      <span class="tab" id="tab-network" onclick="event.stopPropagation(); showTab('network')">Network</span>
-      <span class="tab"        id="tab-printer" onclick="event.stopPropagation(); showTab('printer')">3D Printer</span>
-      <span class="tab"        id="tab-garage"  onclick="event.stopPropagation(); showTab('garage')">Garage</span>
-      <span class="tab active" id="tab-power"   onclick="event.stopPropagation(); showTab('power')">Power</span>
-      <span class="tab"        id="tab-system"  onclick="event.stopPropagation(); showTab('system')">System</span>
+      <span class="tab" id="tab-network" onclick="showTab('network')">Network</span>
+      <span class="tab"        id="tab-printer" onclick="showTab('printer')">3D Printer</span>
+      <span class="tab"        id="tab-garage"  onclick="showTab('garage')">Garage</span>
+      <span class="tab active" id="tab-power"   onclick="showTab('power')">Power</span>
+      <span class="tab"        id="tab-system"  onclick="showTab('system')">System</span>
     </div>
     <span class="sclock" id="system-clock"></span>
   </div>
@@ -200,16 +202,18 @@
         <span class="k">Internet</span>
         <span class="big"><i class="dot"></i><span class="val">–</span></span>
         <span class="sub">&nbsp;</span>
+        <button class="speed-btn" id="speed-btn" onclick="startSpeedTest()">Test speed</button>
       </div>
       <div class="net-card" id="n-gateway">
         <span class="k">Gateway</span>
         <span class="big"><i class="dot"></i><span class="val">–</span></span>
         <span class="sub">&nbsp;</span>
       </div>
-      <div class="net-card" id="n-traffic">
-        <span class="k">Traffic</span>
+      <div class="net-card" id="n-speed">
+        <span class="k">Speed test</span>
         <span class="big traffic"><span class="down">↓ –</span><span class="up">↑ –</span></span>
-        <span class="sub">&nbsp;</span>
+        <span class="sub">no test run yet</span>
+        <div class="speed-hist" id="speed-hist"></div>
       </div>
     </div>
 
@@ -342,7 +346,6 @@
   </div><!-- #page-power -->
 
 
-  <div class="sys-footer">tap to go back</div>
 
 </div><!-- #system-view -->
 
@@ -493,10 +496,7 @@
       if (gw) setLink(gcard, gw.up, gw.ip, gw.up ? `${Math.round(gw.ms)} ms · ${gw.iface}` : 'no reply');
       else    setLink(gcard, null, '–', 'not available');
 
-      const t = d.traffic, tcard = document.getElementById('n-traffic');
-      tcard.querySelector('.down').textContent = '↓ ' + (t ? fmtRate(t.rx_bps) : '–');
-      tcard.querySelector('.up').textContent   = '↑ ' + (t ? fmtRate(t.tx_bps) : '–');
-      tcard.querySelector('.sub').textContent  = t ? t.iface : 'not available';
+      refreshSpeed();
 
       const box = document.getElementById('n-devices');
       box.replaceChildren();
@@ -523,6 +523,53 @@
         box.append(hint);
       }
     } catch (e) { /* keep last values; try again on next tick */ }
+  }
+
+  // ── Speed test (starts only when the button is pressed) ────
+  let speedPoll = null;
+  const fmtMbit = v => v == null ? '–' : (v >= 100 ? v.toFixed(0) : v.toFixed(1));
+
+  async function startSpeedTest() {
+    const btn = document.getElementById('speed-btn');
+    btn.disabled = true;                                   // one test at a time (the server enforces it too)
+    btn.textContent = 'Starting…';
+    try { renderSpeed(await (await fetch('/api/speedtest', { method: 'POST' })).json()); }
+    catch (e) { btn.disabled = false; btn.textContent = 'Test speed'; }
+  }
+  async function refreshSpeed() {
+    try { renderSpeed(await (await fetch('/api/speedtest', { cache: 'no-store' })).json()); } catch (e) {}
+  }
+
+  function renderSpeed(s) {
+    const btn = document.getElementById('speed-btn'), card = document.getElementById('n-speed');
+    const sub = card.querySelector('.sub'), last = s.last;
+    const label = { ping: 'Testing latency…', download: 'Testing download…', upload: 'Testing upload…' };
+    btn.disabled = s.running;
+    btn.textContent = s.running ? (label[s.phase] || 'Testing…') : 'Test speed';
+    card.classList.toggle('busy', s.running);
+
+    card.querySelector('.down').textContent = '↓ ' + (last ? fmtMbit(last.down) : '–');
+    card.querySelector('.up').textContent   = '↑ ' + (last ? fmtMbit(last.up) : '–');
+    sub.textContent = s.running ? 'running… this uses your full connection'
+      : s.error ? 'last test failed: ' + s.error
+      : last ? `Mbit/s · ping ${last.ping != null ? Math.round(last.ping) + ' ms' : '–'} · ${fmtAgo(s.now - last.t)}`
+             : 'no test run yet';
+
+    // history: one bar per past test (download), oldest left; the newest is highlighted
+    const hist = document.getElementById('speed-hist');
+    hist.replaceChildren();
+    const rows = s.history || [], peak = Math.max(1, ...rows.map(r => r.down));
+    rows.forEach((r, i) => {
+      const bar = document.createElement('i');
+      bar.style.height = Math.max(8, 100 * r.down / peak) + '%';
+      if (i === rows.length - 1) bar.className = 'latest';
+      bar.title = `${new Date(r.t * 1000).toLocaleString()}: ↓ ${fmtMbit(r.down)} ↑ ${fmtMbit(r.up)} Mbit/s`;
+      hist.append(bar);
+    });
+
+    // while a test runs, poll quickly so progress shows; stop afterwards
+    if (s.running && !speedPoll) speedPoll = setInterval(refreshSpeed, 1000);
+    if (!s.running && speedPoll) { clearInterval(speedPoll); speedPoll = null; }
   }
 
   function fmtAgo(s) {

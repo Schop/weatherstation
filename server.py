@@ -13,12 +13,13 @@ import config
 import garage
 import homeassistant
 import p1
+import speedtest
 import lanscan
 import netstatus
 import radar
 import sysinfo
 import weather
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 
 _STARTED = time.time()
 
@@ -31,6 +32,7 @@ _state = "loading"   # "loading" | "ok" | "error"
 _printer = None       # bambu.Printer | None (started in __main__ if configured)
 _garage = None        # garage.GarageDoor | None (started in __main__ if configured)
 _p1 = None            # p1.Meter | None (started in __main__ if configured)
+_speedtest = speedtest.SpeedTest()
 _scanner = None       # lanscan.Scanner | None (started in __main__ if enabled)
 
 
@@ -202,6 +204,16 @@ def printer():
         resp = jsonify({"configured": False})
     else:
         resp = jsonify(_printer.snapshot())
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/speedtest", methods=["GET", "POST"])
+def speed_test():
+    started = False
+    if request.method == "POST":                 # the button: starts a test unless one is already running
+        started = _speedtest.start()
+    resp = jsonify(dict(_speedtest.snapshot(), started=started))
     resp.headers["Cache-Control"] = "no-store"
     return resp
 
