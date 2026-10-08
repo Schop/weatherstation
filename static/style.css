@@ -450,33 +450,36 @@ body {
 
 /* ── Network page ───────────────────────────────────── */
 .net-summary {
-  height: 170px;
+  height: 84px;
   flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  padding: 24px 40px 0;
+  gap: 14px;
+  padding: 16px 40px 0;
+  box-sizing: content-box;
 }
 
 .net-card {
   background: #EEEAE2;
-  border-radius: 20px;
-  padding: 0 28px;
+  border-radius: 14px;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
+  gap: 2px;
+  min-width: 0;
 }
 
-.net-card .k   { font-size: 18px; font-weight: 600; color: #9A8A78; letter-spacing: 0.3px; }
+.net-card .k   { font-size: 14px; font-weight: 600; color: #9A8A78; letter-spacing: 0.3px; }
 .net-card .big {
-  display: flex; align-items: center; gap: 14px;
-  font-size: 40px; font-weight: 700; color: #262320;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 28px; line-height: 1.1; font-weight: 700; color: #262320;
   white-space: nowrap; font-variant-numeric: tabular-nums;
 }
-.net-card .sub { font-size: 17px; font-weight: 600; color: #9A8A78; font-variant-numeric: tabular-nums; }
+.net-card .sub { font-size: 13px; font-weight: 600; color: #9A8A78; font-variant-numeric: tabular-nums;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.big.traffic { gap: 28px; font-size: 32px; }
+.big.traffic { gap: 20px; font-size: 24px; }
 .big.traffic .down { color: #4180C8; }
 .big.traffic .up   { color: #D47820; }
 
@@ -489,8 +492,9 @@ body {
   background: #C9C0B3;
   flex-shrink: 0;
 }
-.up   .dot { background: #5E9E6E; box-shadow: 0 0 0 5px rgba(94, 158, 110, 0.18); }
-.down .dot { background: #B85C50; box-shadow: 0 0 0 5px rgba(184, 92, 80, 0.18); }
+.up   .dot { background: #5E9E6E; box-shadow: 0 0 0 4px rgba(94, 158, 110, 0.18); }
+.down .dot { background: #B85C50; box-shadow: 0 0 0 4px rgba(184, 92, 80, 0.18); }
+.net-card .dot { width: 12px; height: 12px; }
 .net-card.down .val { color: #B85C50; }
 
 .net-head {
@@ -498,8 +502,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 26px 44px 10px;
-  font-size: 22px;
+  padding: 14px 44px 8px;
+  font-size: 20px;
   font-weight: 700;
   color: #262320;
 }
