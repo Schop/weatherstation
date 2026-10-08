@@ -160,7 +160,7 @@ def garage_door():
     if _garage is None:
         resp = jsonify({"configured": False})
     else:
-        resp = jsonify(dict(_garage.snapshot(), warn_minutes=config.GARAGE_WARN_MINUTES))
+        resp = jsonify(_garage.snapshot())
     resp.headers["Cache-Control"] = "no-store"
     return resp
 

@@ -26,10 +26,6 @@
       <span class="tab"        id="mtab-radar" onclick="showMainTab('radar')">Radar</span>
     </div>
     <div class="top-bar-right">
-      <div class="garage-badge" id="garage-badge" style="display:none">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6v10h-3v-8H6v8H3z"/><path d="M8 14h8v1.6H8zm0 3h8v1.6H8z"/></svg>
-        <span id="garage-text">Garage open</span>
-      </div>
       <div class="location">{{ cfg.LOCATION_NAME }}</div>
     </div>
   </div>
@@ -154,6 +150,7 @@
       <span class="tab active" id="tab-system"  onclick="event.stopPropagation(); showTab('system')">System</span>
       <span class="tab"        id="tab-network" onclick="event.stopPropagation(); showTab('network')">Network</span>
       <span class="tab"        id="tab-printer" onclick="event.stopPropagation(); showTab('printer')">3D Printer</span>
+      <span class="tab"        id="tab-garage"  onclick="event.stopPropagation(); showTab('garage')">Garage</span>
     </div>
     <span class="sclock" id="system-clock"></span>
   </div>
@@ -278,6 +275,28 @@
 
   </div><!-- #page-printer -->
 
+  <div class="tab-page" id="page-garage" style="display:none">
+
+    <div class="gr-now" id="gr-now">
+      <div class="gr-icon">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path class="gr-roof" d="M6 26 32 8l26 18v30h-6V30H12v26H6z"/>
+          <g class="gr-slats"><rect x="16" y="32" width="32" height="5" rx="1.5"/><rect x="16" y="40" width="32" height="5" rx="1.5"/><rect x="16" y="48" width="32" height="5" rx="1.5"/></g>
+        </svg>
+      </div>
+      <div class="gr-now-text">
+        <span class="gr-state">–</span>
+        <span class="gr-since">&nbsp;</span>
+      </div>
+      <div class="gr-counts" id="gr-counts"></div>
+    </div>
+
+    <div class="gr-log-head"><span>Events</span><span class="count" id="gr-total"></span></div>
+    <div class="gr-log" id="gr-log"></div>
+    <div class="pr-msg" id="gr-msg" style="display:none"></div>
+
+  </div><!-- #page-garage -->
+
 
   <div class="sys-footer">tap to go back</div>
 
@@ -338,12 +357,12 @@
 
   function showTab(tab) {
     currentTab = tab;
-    for (const t of ['system', 'network', 'printer']) {
+    for (const t of ['system', 'network', 'printer', 'garage']) {
       document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     }
-    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter }[tab];
-    const every   = { system: 2000, network: 4000, printer: 2000 }[tab];
+    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage }[tab];
+    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000 }[tab];
     clearInterval(sysTimer); clearTimeout(idleTimer);
     refresh();
     sysTimer  = setInterval(refresh, every);
@@ -516,34 +535,89 @@
   }
   setInterval(() => { if (termPages > 1) { termPage++; renderTerminal(); } }, TERM_PAGE_MS);
 
-  // ── Garage door badge (top bar; only visible while the door is open) ──
-  let garageOpenSince = null, garageWarnMin = 15;
+  // ── Garage tab: event log ──────────────────────────────────
+  const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const pad2 = n => String(n).padStart(2, '0');
+  const dayKey = d => d.getFullYear() * 10000 + d.getMonth() * 100 + d.getDate();
 
-  function renderGarage() {
-    const badge = document.getElementById('garage-badge');
-    if (garageOpenSince === null) { badge.style.display = 'none'; return; }
-    const open = garageOpenSince > 0 ? Math.max(0, (Date.now() - garageOpenSince) / 60000) : null;
-    badge.style.display = 'flex';
-    badge.classList.toggle('warn', open !== null && open >= garageWarnMin);
-    document.getElementById('garage-text').textContent =
-      open === null ? 'Garage open' : 'Garage open · ' + fmtDuration(Math.floor(open * 60)).replace(/^0m$/, '<1m');
+  function dayLabel(d, today) {
+    const diff = Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()) -
+                             new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    return `${d.getDate()} ${MONTHS_EN[d.getMonth()]}`;
+  }
+  function showGarageMessage(text) {
+    document.getElementById('gr-log').style.display = 'none';
+    const m = document.getElementById('gr-msg');
+    m.textContent = text;
+    m.style.display = 'flex';
   }
 
-  async function pollGarage() {
+  async function refreshGarage() {
     try {
       const d = await (await fetch('/api/garage', { cache: 'no-store' })).json();
-      garageWarnMin = d.warn_minutes || 15;
-      if (d.state === 'open')
-        // age is only known if we saw it change; otherwise show "open" without a time (0 = unknown)
-        garageOpenSince = d.age != null ? Date.now() - d.age * 1000 : 0;
-      else
-        garageOpenSince = null;
-      renderGarage();
-    } catch (e) { /* keep the last state; try again on the next poll */ }
+      if (!d.configured) {
+        showGarageMessage('Garage not configured — set GARAGE_MQTT_USER and GARAGE_MQTT_PASSWORD in config_local.py');
+        return;
+      }
+      document.getElementById('gr-msg').style.display = 'none';
+      const log = document.getElementById('gr-log');
+      log.style.display = 'flex';
+
+      // current state
+      const now = document.getElementById('gr-now');
+      const known = d.state === 'open' || d.state === 'closed';
+      now.className = 'gr-now ' + (known ? d.state : 'unknown');
+      now.querySelector('.gr-state').textContent =
+        known ? (d.state === 'open' ? 'Open' : 'Closed')
+              : (d.connected ? 'Waiting for data…' : (d.error ? 'Broker: ' + d.error : 'Broker offline'));
+      now.querySelector('.gr-since').textContent =
+        known && d.since ? 'for ' + fmtDuration(Math.floor(d.now - d.since)).replace(/^0m$/, '<1m') +
+                           ' · since ' + new Date(d.since * 1000).toTimeString().slice(0, 5)
+                         : ' ';
+
+      // opened today / last 7 days
+      const today = new Date(), startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()) / 1000;
+      const opens = d.events.filter(e => e.state === 'open');
+      const nToday = opens.filter(e => e.t >= startToday).length;
+      const nWeek  = opens.filter(e => e.t >= d.now - 7 * 86400).length;
+      document.getElementById('gr-counts').innerHTML =
+        `<span><b>${nToday}</b> opened today</span><span><b>${nWeek}</b> in 7 days</span>`;
+
+      // event list, grouped per day (newest first)
+      log.replaceChildren();
+      if (!d.events.length) {
+        const empty = document.createElement('div');
+        empty.className = 'net-empty';
+        empty.textContent = 'No events recorded yet — they appear when the door opens or closes';
+        log.append(empty);
+      }
+      let lastDay = null;
+      for (const e of d.events) {
+        const t = new Date(e.t * 1000), key = dayKey(t);
+        if (key !== lastDay) {
+          const h = document.createElement('div');
+          h.className = 'gr-day';
+          h.textContent = dayLabel(t, today);
+          log.append(h);
+          lastDay = key;
+        }
+        const row = document.createElement('div');
+        row.className = 'gr-ev ' + e.state;
+        const mk = (cls, text) => { const s = document.createElement('span'); s.className = cls; s.textContent = text; return s; };
+        const dot = document.createElement('i'); dot.className = 'dot';
+        const live = e.duration == null;                       // the current state: still going
+        row.append(dot, mk('gr-time', `${pad2(t.getHours())}:${pad2(t.getMinutes())}`),
+                   mk('gr-what', e.state === 'open' ? 'Opened' : 'Closed'),
+                   mk('gr-dur', live ? 'now' : (e.state === 'open' ? 'open for ' : 'closed for ') +
+                                fmtDuration(e.duration).replace(/^0m$/, '<1m')));
+        log.append(row);
+      }
+      document.getElementById('gr-total').textContent =
+        d.total > d.events.length ? `last ${d.events.length} of ${d.total}` : (d.total ? `${d.total} events` : '');
+    } catch (e) { /* keep last values; try again on next tick */ }
   }
-  pollGarage();
-  setInterval(pollGarage, 5000);
-  setInterval(renderGarage, 30000);                      // keeps "open · 12m" current between polls
 
   // ── Printer tab ────────────────────────────────────────────
   const PRINT_STATES = {

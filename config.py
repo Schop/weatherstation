@@ -15,7 +15,6 @@ GARAGE_MQTT_PORT = 1883
 GARAGE_MQTT_USER = ""
 GARAGE_MQTT_PASSWORD = ""
 GARAGE_TOPIC = "home/garagedoor/state"     # payloads: OPEN / CLOSED
-GARAGE_WARN_MINUTES = 15                   # badge turns red when open longer than this
 
 # --- Rain radar ---
 # Zoom of Buienradar's map widget: 6 = whole region, 8 = ~200 km wide,

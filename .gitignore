@@ -9,3 +9,4 @@ venv/
 # local secrets
 config_local.py
 lan_devices.json
+garage_events.json
