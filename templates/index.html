@@ -701,8 +701,10 @@
       // house usage = solar + grid
       const h = d.house;
       document.getElementById('pw-house-w').textContent = h ? Math.round(h.w) : '–';
+      const age = h && h.stale ? ' · solar ' + fmtDuration(h.solar_age).replace(/^0m$/, '<1m') + ' old' : '';
       document.getElementById('pw-house-sub').textContent = !h ? 'solar data not available'
-        : h.direct_pct != null ? `solar ${Math.round(h.solar_w)} W · ${h.direct_pct}% used directly` : 'no solar production';
+        : (h.direct_pct != null ? `solar ${Math.round(h.solar_w)} W · ${h.direct_pct}% used directly` : 'no solar production') + age;
+      document.getElementById('pw-house').classList.toggle('stale', !!(h && h.stale));
 
       // per-phase bars (positive = import)
       const box = document.getElementById('pw-phases');

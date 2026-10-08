@@ -28,6 +28,8 @@ KEEP_SECONDS = 24 * 3600
 SAVE_SECONDS = 300
 STALE_SECONDS = 15             # no successful reading for this long = meter offline
 SOLAR_SECONDS = 20             # how often the solar callback is asked
+SOLAR_MAX_AGE = 3600           # a solar value older than this (s) is too old to use
+SOLAR_STALE_AFTER = 180        # older than this (s) is shown as 'last known'
 PARTIAL_AFTER = 600            # baseline taken >10 min after midnight = "today" is partial
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "p1_data.json")
 
@@ -54,8 +56,9 @@ class Meter:
         self._bucket = None          # [start, sum, count]
         self._baseline = None        # {"date", "t", "imp", "exp", "gas"}
         self._last_save = 0.0
-        self._solar = None
-        self._solar_at = 0.0
+        self._solar = None           # last GOOD solar reading, kept through outages
+        self._solar_ok_at = None     # when that reading was taken
+        self._solar_at = 0.0         # when the callback was last asked
         self._load()
 
     # -- persistence ---------------------------------------------------------
@@ -106,8 +109,9 @@ class Meter:
             except Exception as exc:
                 print(f"[p1] solar lookup failed: {exc}", file=sys.stderr)
                 solar = None
-            with self._lock:
-                self._solar = solar
+            if solar is not None:                    # an outage keeps the last good value
+                with self._lock:
+                    self._solar, self._solar_ok_at = solar, now
 
         req = urllib.request.Request(f"http://{self.host}/api/v1/data",
                                      headers={"User-Agent": "weatherstation/1.0"})
@@ -158,7 +162,7 @@ class Meter:
         now = now or time.time()
         with self._lock:
             d, last_ok, error = self._data, self._last_ok, self._error
-            base, solar = self._baseline, self._solar
+            base, solar, solar_at = self._baseline, self._solar, self._solar_ok_at
         if d is None:
             return {"configured": True, "ok": False, "error": error}
 
@@ -173,9 +177,11 @@ class Meter:
                                "a": _num(d.get(f"active_current_l{n}_a"))})
 
         house = None
-        if grid is not None and solar is not None:
+        solar_age = round(now - solar_at) if solar_at is not None else None
+        if grid is not None and solar is not None and solar_age <= SOLAR_MAX_AGE:
             export = max(0.0, -grid)
             house = {"w": round(max(0.0, solar + grid)), "solar_w": round(solar),
+                     "solar_age": solar_age, "stale": solar_age > SOLAR_STALE_AFTER,
                      "direct_pct": (round(max(0.0, min(100.0, 100 * (solar - export) / solar)))
                                     if solar > 50 else None)}
 

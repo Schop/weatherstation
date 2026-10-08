@@ -955,6 +955,8 @@ body {
 
 .pw-house-val { font-size: 54px; font-weight: 700; line-height: 1; color: #262320; font-variant-numeric: tabular-nums; }
 .pw-house-sub { font-size: 16px; font-weight: 600; color: #9A8A78; }
+.pw-house.stale .pw-house-val { color: #9A8A78; }          /* based on an old solar reading: greyed */
+.pw-house.stale .pw-house-sub { color: #A87818; }
 
 .pw-phases { grid-column: 2; display: flex; flex-direction: column; gap: 9px; background: #EEEAE2; border-radius: 16px; padding: 16px 20px; justify-content: center; }
 .pw-house { grid-column: 1; }
