@@ -1060,16 +1060,40 @@ body {
 #n-speed .up   { color: var(--accent); }
 #n-speed.busy .big { opacity: 0.45; }
 
-/* history strip: bars along the right edge of the card */
-.speed-hist {
+/* ── Speed test history panel (full-height, over the Network page) ── */
+#n-speed { cursor: pointer; }
+.speed-more { position: absolute; right: 16px; top: 12px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+
+.speed-panel {
   position: absolute;
-  right: 16px;
-  top: 12px;
-  bottom: 12px;
-  width: 120px;
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
+  inset: 84px 0 0 0;                /* below the status header, so the tabs and home button stay usable */
+  display: none;
+  flex-direction: column;
+  background: var(--bg);
+  z-index: 5;
+  padding: 18px 40px 16px;
 }
-.speed-hist i { flex: 1; min-width: 2px; border-radius: 2px 2px 0 0; background: var(--line-strong); }
-.speed-hist i.latest { background: var(--blue); }
+.sh-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.sh-title { font-size: 26px; font-weight: 700; color: var(--text); }
+.sh-title small { font-size: 16px; font-weight: 600; color: var(--text-2); margin-left: 12px; }
+.sh-close {
+  border: 0; border-radius: 10px; padding: 10px 20px;
+  background: var(--card-2); color: var(--text);
+  font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.sh-close:active { background: var(--line-strong); }
+.sh-stats { font-size: 15px; font-weight: 600; color: var(--text-2); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+
+.sh-cols, .sh-row { display: grid; grid-template-columns: 1fr 150px 150px 120px; align-items: center; gap: 12px; padding: 0 16px; }
+.sh-cols { height: 34px; font-size: 14px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-2); border-bottom: 1px solid var(--line-strong); }
+.sh-cols span:not(:first-child), .sh-row span:not(:first-child) { text-align: right; }
+
+.sh-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+.sh-list::-webkit-scrollbar { display: none; }
+.sh-row { height: 46px; border-bottom: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+.sh-row:nth-child(even) { background: var(--card); }
+.sh-when { font-size: 20px; font-weight: 600; color: var(--text); white-space: pre; }
+.sh-down { font-size: 22px; font-weight: 700; color: var(--blue); }
+.sh-up   { font-size: 22px; font-weight: 700; color: var(--accent); }
+.sh-ping { font-size: 18px; font-weight: 600; color: var(--text-2); }
+.sh-empty { padding: 60px 0; text-align: center; font-size: 18px; color: var(--text-3); }

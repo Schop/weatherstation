@@ -202,18 +202,18 @@
         <span class="k">Internet</span>
         <span class="big"><i class="dot"></i><span class="val">–</span></span>
         <span class="sub">&nbsp;</span>
-        <button class="speed-btn" id="speed-btn" onclick="startSpeedTest()">Test speed</button>
+        <button class="speed-btn" id="speed-btn" onclick="event.stopPropagation(); startSpeedTest()">Test speed</button>
       </div>
       <div class="net-card" id="n-gateway">
         <span class="k">Gateway</span>
         <span class="big"><i class="dot"></i><span class="val">–</span></span>
         <span class="sub">&nbsp;</span>
       </div>
-      <div class="net-card" id="n-speed">
+      <div class="net-card" id="n-speed" onclick="openSpeedHistory()">
         <span class="k">Speed test</span>
         <span class="big traffic"><span class="down">↓ –</span><span class="up">↑ –</span></span>
         <span class="sub">no test run yet</span>
-        <div class="speed-hist" id="speed-hist"></div>
+        <span class="speed-more">history ›</span>
       </div>
     </div>
 
@@ -346,6 +346,16 @@
   </div><!-- #page-power -->
 
 
+
+  <div class="speed-panel" id="speed-panel">
+    <div class="sh-head">
+      <span class="sh-title">Speed test history<small id="sh-count"></small></span>
+      <button class="sh-close" onclick="closeSpeedHistory()">Close</button>
+    </div>
+    <div class="sh-stats" id="sh-stats"></div>
+    <div class="sh-cols"><span>When</span><span>Download Mbit/s</span><span>Upload Mbit/s</span><span>Ping</span></div>
+    <div class="sh-list" id="sh-list"></div>
+  </div>
 
 </div><!-- #system-view -->
 
@@ -525,6 +535,44 @@
     } catch (e) { /* keep last values; try again on next tick */ }
   }
 
+  // ── Speed test history: a panel over the Network page with the actual numbers ──
+  let speedHistory = [];
+
+  function openSpeedHistory() {
+    document.getElementById('speed-panel').style.display = 'flex';
+    renderSpeedHistory();
+  }
+  function closeSpeedHistory() { document.getElementById('speed-panel').style.display = 'none'; }
+
+  function renderSpeedHistory() {
+    const list = document.getElementById('sh-list'), rows = speedHistory.slice().reverse();   // newest first
+    list.replaceChildren();
+    document.getElementById('sh-count').textContent = rows.length ? `${rows.length} tests` : '';
+    if (!rows.length) {
+      const e = document.createElement('div');
+      e.className = 'sh-empty';
+      e.textContent = 'No tests yet — press "Test speed" on the Network page';
+      list.append(e);
+      document.getElementById('sh-stats').textContent = '';
+      return;
+    }
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const best = Math.max(...rows.map(r => r.down)), worst = Math.min(...rows.map(r => r.down));
+    const avg = k => rows.reduce((a, r) => a + (r[k] || 0), 0) / rows.length;
+    document.getElementById('sh-stats').textContent =
+      `average ↓ ${fmtMbit(avg('down'))} · ↑ ${fmtMbit(avg('up'))} Mbit/s · best ↓ ${fmtMbit(best)} · worst ↓ ${fmtMbit(worst)}`;
+
+    for (const r of rows) {
+      const d = new Date(r.t * 1000), row = document.createElement('div');
+      row.className = 'sh-row';
+      const mk = (cls, text) => { const s = document.createElement('span'); s.className = cls; s.textContent = text; return s; };
+      row.append(mk('sh-when', `${days[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}  ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`),
+                 mk('sh-down', fmtMbit(r.down)), mk('sh-up', fmtMbit(r.up)),
+                 mk('sh-ping', r.ping != null ? Math.round(r.ping) + ' ms' : '–'));
+      list.append(row);
+    }
+  }
+
   // ── Speed test (starts only when the button is pressed) ────
   let speedPoll = null;
   const fmtMbit = v => v == null ? '–' : (v >= 100 ? v.toFixed(0) : v.toFixed(1));
@@ -555,17 +603,8 @@
       : last ? `Mbit/s · ping ${last.ping != null ? Math.round(last.ping) + ' ms' : '–'} · ${fmtAgo(s.now - last.t)}`
              : 'no test run yet';
 
-    // history: one bar per past test (download), oldest left; the newest is highlighted
-    const hist = document.getElementById('speed-hist');
-    hist.replaceChildren();
-    const rows = s.history || [], peak = Math.max(1, ...rows.map(r => r.down));
-    rows.forEach((r, i) => {
-      const bar = document.createElement('i');
-      bar.style.height = Math.max(8, 100 * r.down / peak) + '%';
-      if (i === rows.length - 1) bar.className = 'latest';
-      bar.title = `${new Date(r.t * 1000).toLocaleString()}: ↓ ${fmtMbit(r.down)} ↑ ${fmtMbit(r.up)} Mbit/s`;
-      hist.append(bar);
-    });
+    speedHistory = s.history || [];
+    if (document.getElementById('speed-panel').style.display === 'flex') renderSpeedHistory();   // update while open
 
     // while a test runs, poll quickly so progress shows; stop afterwards
     if (s.running && !speedPoll) speedPoll = setInterval(refreshSpeed, 1000);

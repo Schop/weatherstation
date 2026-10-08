@@ -12,10 +12,12 @@ Results (the last HISTORY_MAX tests) are kept in speedtest_history.json.
 
 import json
 import os
+import socket
 import statistics
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
@@ -26,7 +28,7 @@ PHASE_SECONDS = 8
 WARMUP_SECONDS = 1.5
 MAX_BYTES = 400_000_000         # per direction, a hard cap whatever the speed
 UP_BLOCK = 1_000_000
-HISTORY_MAX = 20
+HISTORY_MAX = 100
 HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "speedtest_history.json")
 _UA = {"User-Agent": "weatherstation/1.0"}
 
@@ -100,14 +102,16 @@ class SpeedTest:
     # -- measurements --------------------------------------------------------
 
     def _ping(self):
-        """Median time to first byte of a tiny request, in ms (includes TLS: a connection-level figure)."""
+        """Latency in ms: median time of a bare TCP connect (one round trip), like a ping.
+        (Timing a fresh HTTPS request instead would include the TCP and TLS handshakes,
+        several round trips, and read 3-4x too high.)"""
+        host = urllib.parse.urlsplit(self.host).hostname
         times = []
-        for _ in range(5):
+        for _ in range(7):
             t = time.perf_counter()
-            with urllib.request.urlopen(urllib.request.Request(f"{self.host}/__down?bytes=0", headers=_UA), timeout=8) as r:
-                r.read()
+            socket.create_connection((host, 443), timeout=5).close()
             times.append((time.perf_counter() - t) * 1000)
-        return statistics.median(times[1:])         # first one pays for DNS/TLS setup
+        return statistics.median(times)
 
     def _phase_rate(self, worker):
         """Run `worker(stop_at, count)` on STREAMS threads; return Mbit/s after the warm-up."""
