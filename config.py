@@ -28,6 +28,13 @@ NETWORK_DEVICES = [
     # {"name": "Printer", "host": "192.168.1.50", "port": 8883},
 ]
 
+# Discover everything else on the local network too (sweeps the subnet every ~90 s).
+NETWORK_SCAN = True
+NETWORK_SUBNET = None      # None = detect automatically; or e.g. "192.168.1.0/24"
+# Names for discovered devices, by MAC address (most reliable) or IP address:
+#   NETWORK_LABELS = {"aa:bb:cc:dd:ee:ff": "Living room TV"}
+NETWORK_LABELS = {}
+
 # --- Display ---
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 480

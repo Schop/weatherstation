@@ -212,7 +212,11 @@
       <span>Devices</span>
       <span class="count" id="n-count"></span>
     </div>
-    <div class="net-devices" id="n-devices"></div>
+    <div class="net-scroll" id="n-scroll">
+      <div class="net-devices" id="n-devices"></div>
+      <div class="net-sub" id="n-lan-head" style="display:none">On the network</div>
+      <div class="net-lan" id="n-lan"></div>
+    </div>
 
   </div><!-- #page-network -->
 
@@ -423,33 +427,65 @@
       tcard.querySelector('.up').textContent   = '↑ ' + (t ? fmtRate(t.tx_bps) : '–');
       tcard.querySelector('.sub').textContent  = t ? t.iface : 'not available';
 
+      const scroll = document.getElementById('n-scroll');
+      const keepAt = scroll.scrollTop;                 // rebuilding the lists must not jump the scroll
       const box = document.getElementById('n-devices');
       box.replaceChildren();
-      for (const dev of d.devices) {
-        const el  = document.createElement('div');
-        el.className = 'device ' + (dev.up ? 'up' : 'down');
-        const dot = document.createElement('i');    dot.className = 'dot';
-        const txt = document.createElement('div');  txt.className = 'dev-text';
-        const nm  = document.createElement('span'); nm.className = 'dev-name'; nm.textContent = dev.name;
-        const ad  = document.createElement('span'); ad.className = 'dev-addr';
-        ad.textContent = dev.host + (dev.port ? ':' + dev.port : '');
-        txt.append(nm, ad);
-        const ms  = document.createElement('span'); ms.className = 'dev-ms';
-        ms.textContent = dev.up ? Math.round(dev.ms) + ' ms' : 'offline';
-        el.append(dot, txt, ms);
-        box.append(el);
+      for (const dev of d.devices)
+        box.append(deviceCard(dev, 'device', dev.up ? 'up' : 'down',
+                              dev.host + (dev.port ? ':' + dev.port : ''),
+                              dev.up ? Math.round(dev.ms) + ' ms' : 'offline'));
+
+      const lan = d.lan, lanBox = document.getElementById('n-lan');
+      lanBox.replaceChildren();
+      const found = lan ? lan.devices : [];
+      for (const dev of found) {
+        const ms = dev.up
+          ? (dev.ms != null ? Math.round(dev.ms) + ' ms' : '')
+          : (dev.last_seen ? fmtAgo(d.now - dev.last_seen) : '');
+        const card = deviceCard(dev, 'device lan', dev.up ? 'up' : 'away', dev.detail, ms);
+        if (dev.unknown) card.classList.add('unknown');
+        lanBox.append(card);
       }
-      const up = d.devices.filter(x => x.up).length;
-      document.getElementById('n-count').textContent =
-        d.devices.length ? `${up} of ${d.devices.length} online` : '';
-      if (!d.devices.length) {
+      document.getElementById('n-lan-head').style.display = found.length ? 'block' : 'none';
+
+      const all = d.devices.concat(found), up = all.filter(x => x.up).length;
+      document.getElementById('n-count').textContent = all.length ? `${up} of ${all.length} online` : '';
+      if (!all.length) {
         const hint = document.createElement('div');
         hint.className = 'net-empty';
-        hint.textContent = 'No devices configured — add them to NETWORK_DEVICES in config.py';
+        hint.textContent = !lan ? 'No devices configured — add them to NETWORK_DEVICES in config.py'
+                         : lan.error ? 'Network scan: ' + lan.error
+                         : 'Scanning the network…';
         box.append(hint);
       }
+      scroll.scrollTop = keepAt;
     } catch (e) { /* keep last values; try again on next tick */ }
   }
+
+  function fmtAgo(s) {
+    if (s < 90)    return 'just now';
+    if (s < 5400)  return Math.round(s / 60) + ' min ago';
+    if (s < 129600) return Math.round(s / 3600) + ' h ago';
+    return Math.round(s / 86400) + ' d ago';
+  }
+  function deviceCard(dev, base, state, addr, right) {
+    const el  = document.createElement('div');
+    el.className = base + ' ' + state;
+    const dot = document.createElement('i');    dot.className = 'dot';
+    const txt = document.createElement('div');  txt.className = 'dev-text';
+    const nm  = document.createElement('span'); nm.className = 'dev-name'; nm.textContent = dev.name;
+    const ad  = document.createElement('span'); ad.className = 'dev-addr'; ad.textContent = addr;
+    txt.append(nm, ad);
+    const r   = document.createElement('span'); r.className = 'dev-ms'; r.textContent = right;
+    el.append(dot, txt, r);
+    return el;
+  }
+
+  // touching or scrolling the list counts as activity (the status screen closes itself after a minute)
+  document.getElementById('n-scroll').addEventListener('scroll', () => {
+    if (idleTimer) { clearTimeout(idleTimer); idleTimer = setTimeout(closeSystem, 60000); }
+  }, { passive: true });
 
   // ── Printer tab ────────────────────────────────────────────
   const PRINT_STATES = {

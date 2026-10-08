@@ -10,6 +10,7 @@ import threading
 import time
 import bambu
 import config
+import lanscan
 import netstatus
 import radar
 import sysinfo
@@ -25,6 +26,7 @@ _lock = threading.Lock()
 _data = None          # WeatherData | None
 _state = "loading"   # "loading" | "ok" | "error"
 _printer = None       # bambu.Printer | None (started in __main__ if configured)
+_scanner = None       # lanscan.Scanner | None (started in __main__ if enabled)
 
 
 # ---------------------------------------------------------------------------
@@ -132,7 +134,13 @@ def system():
 
 @app.route("/api/network")
 def network():
-    resp = jsonify(netstatus.snapshot(config.NETWORK_DEVICES))
+    data = dict(netstatus.snapshot(config.NETWORK_DEVICES))   # copy: the original is cached
+    if _scanner is not None:
+        gw = (data.get("gateway") or {}).get("ip")
+        data["lan"] = _scanner.snapshot(exclude={d["host"] for d in config.NETWORK_DEVICES},
+                                        gateway=gw)
+    data["now"] = time.time()
+    resp = jsonify(data)
     resp.headers["Cache-Control"] = "no-store"
     return resp
 
@@ -177,6 +185,10 @@ if __name__ == "__main__":
         _printer = bambu.Printer(config.BAMBU_HOST, config.BAMBU_SERIAL,
                                  config.BAMBU_ACCESS_CODE)
         _printer.start()
+
+    if config.NETWORK_SCAN:
+        _scanner = lanscan.Scanner(config.NETWORK_SUBNET, config.NETWORK_LABELS)
+        _scanner.start()
 
     # Kick off the first fetch immediately
     refresh_ev.set()
