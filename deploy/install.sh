@@ -56,6 +56,27 @@ X-GNOME-Autostart-enabled=true
 EOF
 chown "$APP_USER": "$AUTOSTART/weatherstation-kiosk.desktop"
 
+# --- Night-time screen schedule (hours: ~/.config/weatherstation-screen.conf) --
+chmod +x "$APP_DIR/deploy/screen-schedule.sh"
+cat > "$AUTOSTART/weatherstation-screen.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Weather Station Screen Schedule
+Exec=$APP_DIR/deploy/screen-schedule.sh
+X-GNOME-Autostart-enabled=true
+EOF
+chown "$APP_USER": "$AUTOSTART/weatherstation-screen.desktop"
+SCREEN_CONF="$APP_HOME/.config/weatherstation-screen.conf"
+if [ ! -f "$SCREEN_CONF" ]; then
+    sudo -u "$APP_USER" tee "$SCREEN_CONF" >/dev/null <<EOF
+# Screen is off from OFF_FROM until ON_AT (24h, local time); a touch wakes it briefly.
+OFF_FROM="22:00"
+ON_AT="07:00"
+WAKE_SECONDS=60
+EOF
+fi
+command -v kscreen-doctor >/dev/null || echo "Warning: kscreen-doctor not found, screen schedule won't work (sudo apt install kscreen)" >&2
+
 # --- Autologin (SDDM, used by KDE Plasma) -----------------------------------
 if command -v sddm >/dev/null; then
     mkdir -p /etc/sddm.conf.d
