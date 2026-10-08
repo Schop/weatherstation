@@ -12,6 +12,7 @@ import bambu
 import config
 import garage
 import homeassistant
+import p1
 import lanscan
 import netstatus
 import radar
@@ -29,6 +30,7 @@ _data = None          # WeatherData | None
 _state = "loading"   # "loading" | "ok" | "error"
 _printer = None       # bambu.Printer | None (started in __main__ if configured)
 _garage = None        # garage.GarageDoor | None (started in __main__ if configured)
+_p1 = None            # p1.Meter | None (started in __main__ if configured)
 _scanner = None       # lanscan.Scanner | None (started in __main__ if enabled)
 
 
@@ -166,24 +168,32 @@ def garage_door():
     return resp
 
 
-@app.route("/api/energy")
-def energy():
-    if not config.HA_TOKEN:
+@app.route("/api/power")
+def power():
+    if _p1 is None:
         resp = jsonify({"configured": False})
     else:
-        ids = list(config.HA_SOLAR.values()) + [p["entity"] for p in config.HA_P1]
-        res = homeassistant.fetch_states(config.HA_URL, config.HA_TOKEN, ids)
-        got = res["states"]
-        resp = jsonify({
-            "configured": True,
-            "error": res["error"],
-            "solar": {k: got.get(e) for k, e in config.HA_SOLAR.items()},
-            "p1": [dict(got.get(p["entity"]) or {}, label=p["label"], entity=p["entity"])
-                   for p in config.HA_P1],
-            "now": time.time(),
-        })
+        resp = jsonify(_p1.snapshot())
     resp.headers["Cache-Control"] = "no-store"
     return resp
+
+
+@app.route("/api/power/history")
+def power_history():
+    resp = jsonify(_p1.history() if _p1 is not None else {"points": []})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+def _solar_watts():
+    """Current solar production in watts from Home Assistant (None if unavailable)."""
+    if not (config.HA_TOKEN and config.HA_SOLAR_POWER):
+        return None
+    res = homeassistant.fetch_states(config.HA_URL, config.HA_TOKEN, [config.HA_SOLAR_POWER])
+    st = res["states"].get(config.HA_SOLAR_POWER)
+    if not st or not st["ok"] or st["value"] is None:
+        return None
+    return st["value"] * 1000 if st["unit"] == "kW" else st["value"]
 
 
 @app.route("/api/printer")
@@ -224,6 +234,10 @@ if __name__ == "__main__":
                                     config.GARAGE_MQTT_USER, config.GARAGE_MQTT_PASSWORD,
                                     config.GARAGE_TOPIC)
         _garage.start()
+
+    if config.P1_HOST:
+        _p1 = p1.Meter(config.P1_HOST, solar_fn=_solar_watts)
+        _p1.start()
 
     if config.NETWORK_SCAN:
         _scanner = lanscan.Scanner(config.NETWORK_SUBNET, config.NETWORK_LABELS)

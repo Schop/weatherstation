@@ -10,3 +10,4 @@ venv/
 config_local.py
 lan_devices.json
 garage_events.json
+p1_data.json

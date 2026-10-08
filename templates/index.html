@@ -150,7 +150,7 @@
       <span class="tab active" id="tab-network" onclick="event.stopPropagation(); showTab('network')">Network</span>
       <span class="tab"        id="tab-printer" onclick="event.stopPropagation(); showTab('printer')">3D Printer</span>
       <span class="tab"        id="tab-garage"  onclick="event.stopPropagation(); showTab('garage')">Garage</span>
-      <span class="tab"        id="tab-energy"  onclick="event.stopPropagation(); showTab('energy')">Energy</span>
+      <span class="tab"        id="tab-power"   onclick="event.stopPropagation(); showTab('power')">Power</span>
       <span class="tab"        id="tab-system"  onclick="event.stopPropagation(); showTab('system')">System</span>
     </div>
     <span class="sclock" id="system-clock"></span>
@@ -298,31 +298,47 @@
 
   </div><!-- #page-garage -->
 
-  <div class="tab-page" id="page-energy" style="display:none">
+  <div class="tab-page" id="page-power" style="display:none">
+    <div class="pw-wrap" id="pw-wrap">
 
-    <div class="en-top" id="en-top">
-      <div class="en-now">
-        <span class="tile-label">Solar power now</span>
-        <span class="en-power"><span id="en-power">–</span><small id="en-power-unit">W</small></span>
-        <span class="en-grid" id="en-grid">&nbsp;</span>
+      <div class="pw-main">
+        <div class="pw-live" id="pw-live">
+          <span class="tile-label" id="pw-dir">Grid</span>
+          <span class="pw-value"><span id="pw-w">–</span><small id="pw-unit">W</small></span>
+          <div class="pw-gauge">
+            <div class="pw-track"><i class="pw-zero"></i><i class="pw-fill" id="pw-fill"></i></div>
+            <div class="pw-scale"><span id="pw-s-min">export</span><span>0</span><span id="pw-s-max">import</span></div>
+          </div>
+        </div>
+
+        <div class="pw-house" id="pw-house">
+          <span class="tile-label">House usage</span>
+          <span class="pw-house-val"><span id="pw-house-w">–</span><small>W</small></span>
+          <span class="pw-house-sub" id="pw-house-sub">&nbsp;</span>
+        </div>
+
+        <div class="pw-phases" id="pw-phases"></div>
       </div>
-      <div class="en-bar"><i id="en-bar-fill"></i></div>
+
+      <div class="pw-side">
+        <div class="pw-today" id="pw-today">
+          <div class="tile"><span class="tile-label">Imported today</span><span class="tile-value" id="pw-t-imp">–</span></div>
+          <div class="tile"><span class="tile-label">Exported today</span><span class="tile-value" id="pw-t-exp">–</span></div>
+          <div class="tile"><span class="tile-label">Gas today</span><span class="tile-value" id="pw-t-gas">–</span></div>
+        </div>
+        <div class="pw-note" id="pw-note"></div>
+        <div class="pw-health" id="pw-health"></div>
+      </div>
+
+      <div class="pw-graph">
+        <div class="pw-graph-head"><span>Last 24 hours</span><span class="count" id="pw-graph-note"></span></div>
+        <svg id="pw-svg" viewBox="0 0 1200 190" preserveAspectRatio="none"></svg>
+        <div class="pw-axis" id="pw-axis"></div>
+      </div>
+
     </div>
-
-    <div class="en-tiles" id="en-tiles">
-      <div class="tile" id="en-today"><span class="tile-label">Today</span><span class="tile-value">–</span></div>
-      <div class="tile" id="en-month"><span class="tile-label">This month</span><span class="tile-value">–</span></div>
-      <div class="tile" id="en-year"><span class="tile-label">This year</span><span class="tile-value">–</span></div>
-    </div>
-
-    <div class="en-p1" id="en-p1" style="display:none">
-      <div class="net-head"><span>P1 meter</span></div>
-      <div class="en-p1-grid" id="en-p1-grid"></div>
-    </div>
-
-    <div class="pr-msg" id="en-msg" style="display:none"></div>
-
-  </div><!-- #page-energy -->
+    <div class="pr-msg" id="pw-msg" style="display:none"></div>
+  </div><!-- #page-power -->
 
 
   <div class="sys-footer">tap to go back</div>
@@ -384,12 +400,12 @@
 
   function showTab(tab) {
     currentTab = tab;
-    for (const t of ['system', 'network', 'printer', 'garage', 'energy']) {
+    for (const t of ['system', 'network', 'printer', 'garage', 'power']) {
       document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     }
-    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage, energy: refreshEnergy }[tab];
-    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000, energy: 5000 }[tab];
+    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage, power: refreshPower }[tab];
+    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000, power: 2000 }[tab];
     clearInterval(sysTimer); clearTimeout(idleTimer);
     refresh();
     sysTimer  = setInterval(refresh, every);
@@ -646,63 +662,112 @@
     } catch (e) { /* keep last values; try again on next tick */ }
   }
 
-  // ── Energy tab: solar + P1 meter (via Home Assistant) ─────
-  const SOLAR_PEAK_W = {{ cfg.SOLAR_PEAK_W }};            // full-scale of the power bar
+  // ── Power tab: P1 meter (read directly from the meter) ──────
+  const GAUGE_W = {{ cfg.P1_GAUGE_W }};            // gauge runs -GAUGE_W (export) .. +GAUGE_W (import)
+  let pwHistoryAt = 0;
+  const fmtW  = w => Math.abs(w) >= 1000 ? (w / 1000).toFixed(2) : String(Math.round(w));
+  const unitW = w => Math.abs(w) >= 1000 ? 'kW' : 'W';
+  const fmtKwh = v => v == null ? '–' : (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) + ' kWh';
 
-  // value + unit -> compact text; kWh/Wh and W/kW get sensible precision
-  function fmtEnergy(s) {
-    if (!s || !s.ok || s.value == null) return '–';
-    let v = s.value, u = s.unit || '';
-    if (u === 'Wh' && v >= 1000) { v /= 1000; u = 'kWh'; }
-    const txt = Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2);
-    return txt + (u ? ' ' + u : '');
-  }
-  function showEnergyMessage(text) {
-    for (const id of ['en-top', 'en-tiles', 'en-p1']) document.getElementById(id).style.display = 'none';
-    const m = document.getElementById('en-msg');
+  function showPowerMessage(text) {
+    document.getElementById('pw-wrap').style.display = 'none';
+    const m = document.getElementById('pw-msg');
     m.textContent = text;
     m.style.display = 'flex';
   }
 
-  async function refreshEnergy() {
+  async function refreshPower() {
     try {
-      const d = await (await fetch('/api/energy', { cache: 'no-store' })).json();
-      if (!d.configured) { showEnergyMessage('Home Assistant not configured — set HA_TOKEN in config_local.py'); return; }
-      const sol = d.solar || {};
-      if (d.error && !Object.values(sol).some(s => s)) { showEnergyMessage('Home Assistant: ' + d.error); return; }
+      const d = await (await fetch('/api/power', { cache: 'no-store' })).json();
+      if (!d.configured) { showPowerMessage('P1 meter not configured — set P1_HOST in config.py'); return; }
+      if (d.power == null) { showPowerMessage(d.error ? 'P1 meter: ' + d.error : 'Waiting for the P1 meter…'); return; }
+      document.getElementById('pw-msg').style.display = 'none';
+      document.getElementById('pw-wrap').style.display = 'grid';
 
-      document.getElementById('en-msg').style.display = 'none';
-      document.getElementById('en-top').style.display = 'flex';
-      document.getElementById('en-tiles').style.display = 'grid';
+      // live gauge: left of the centre = exporting (green), right = importing (amber)
+      const w = d.power, live = document.getElementById('pw-live');
+      live.className = 'pw-live ' + (!d.ok ? 'stale' : w < -10 ? 'export' : w > 10 ? 'import' : 'idle');
+      document.getElementById('pw-dir').textContent =
+        !d.ok ? 'Grid · meter not responding' : w < -10 ? 'Exporting to the grid' : w > 10 ? 'Importing from the grid' : 'Grid · balanced';
+      document.getElementById('pw-w').textContent = fmtW(Math.abs(w));
+      document.getElementById('pw-unit').textContent = unitW(w);
+      const pct = Math.min(1, Math.abs(w) / GAUGE_W) * 50, fill = document.getElementById('pw-fill');
+      fill.style.width = pct + '%';
+      fill.style.left = w < 0 ? (50 - pct) + '%' : '50%';
+      document.getElementById('pw-s-min').textContent = '← export ' + fmtW(GAUGE_W) + ' ' + unitW(GAUGE_W);
+      document.getElementById('pw-s-max').textContent = 'import ' + fmtW(GAUGE_W) + ' ' + unitW(GAUGE_W) + ' →';
 
-      // power now (shown in kW from 1000 W up)
-      const p = sol.power;
-      let watts = p && p.ok && p.value != null ? (p.unit === 'kW' ? p.value * 1000 : p.value) : null;
-      document.getElementById('en-power').textContent =
-        watts == null ? '–' : (watts >= 1000 ? (watts / 1000).toFixed(2) : Math.round(watts));
-      document.getElementById('en-power-unit').textContent = watts != null && watts >= 1000 ? 'kW' : 'W';
-      document.getElementById('en-bar-fill').style.width =
-        watts == null ? '0%' : Math.max(0, Math.min(100, 100 * watts / SOLAR_PEAK_W)) + '%';
-      const g = sol.grid;
-      document.getElementById('en-grid').textContent =
-        g && g.ok ? g.state : (d.error ? '' : ' ');
+      // house usage = solar + grid
+      const h = d.house;
+      document.getElementById('pw-house-w').textContent = h ? Math.round(h.w) : '–';
+      document.getElementById('pw-house-sub').textContent = !h ? 'solar data not available'
+        : h.direct_pct != null ? `solar ${Math.round(h.solar_w)} W · ${h.direct_pct}% used directly` : 'no solar production';
 
-      for (const [id, key] of [['en-today', 'today'], ['en-month', 'month'], ['en-year', 'year']])
-        document.querySelector('#' + id + ' .tile-value').textContent = fmtEnergy(sol[key]);
-
-      // P1 meter: whatever entities are configured
-      const p1 = d.p1 || [], box = document.getElementById('en-p1-grid');
-      document.getElementById('en-p1').style.display = p1.length ? 'block' : 'none';
+      // per-phase bars (positive = import)
+      const box = document.getElementById('pw-phases');
       box.replaceChildren();
-      for (const s of p1) {
-        const t = document.createElement('div');
-        t.className = 'tile';
-        const l = document.createElement('span'); l.className = 'tile-label'; l.textContent = s.label;
-        const v = document.createElement('span'); v.className = 'tile-value'; v.textContent = fmtEnergy(s);
-        t.append(l, v);
-        box.append(t);
+      const peak = Math.max(1000, ...d.phases.map(p => Math.abs(p.w)));
+      for (const p of d.phases) {
+        const row = document.createElement('div');
+        row.className = 'ph ' + (p.w < -10 ? 'export' : 'import');
+        const mk = (cls, text) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; return e; };
+        const bar = document.createElement('div'); bar.className = 'ph-bar';
+        const pf = document.createElement('i');
+        const span = Math.abs(p.w) / peak * 50;
+        pf.style.width = span + '%';
+        pf.style.left = p.w < 0 ? (50 - span) + '%' : '50%';
+        bar.append(pf);
+        row.append(mk('ph-n', 'L' + p.n), bar, mk('ph-w', Math.round(p.w) + ' W'),
+                   mk('ph-va', (p.v != null ? Math.round(p.v) + ' V' : '') + (p.a != null ? ' · ' + Math.abs(p.a).toFixed(1) + ' A' : '')));
+        box.append(row);
       }
+
+      // today (the meter only reports lifetime totals: the display keeps the midnight baseline)
+      const t = d.today || {};
+      document.getElementById('pw-t-imp').textContent = fmtKwh(t.import);
+      document.getElementById('pw-t-exp').textContent = fmtKwh(t.export);
+      document.getElementById('pw-t-gas').textContent = t.gas == null ? '–' : t.gas.toFixed(2) + ' m³';
+      document.getElementById('pw-note').textContent = t.partial
+        ? 'Counting since ' + new Date(t.since * 1000).toTimeString().slice(0, 5) + ' (display started after midnight)' : '';
+
+      // meter health
+      const sum = a => (a || []).reduce((x, y) => x + (y || 0), 0);
+      document.getElementById('pw-health').textContent =
+        `Tariff ${d.tariff ?? '–'} · Wi-Fi ${d.wifi ?? '–'}% · sags ${sum(d.sags)} · swells ${sum(d.swells)} · outages ${d.fails ?? '–'} (${d.long_fails ?? '–'} long)`;
+
+      if (Date.now() - pwHistoryAt > 30000) { pwHistoryAt = Date.now(); drawPowerGraph(); }
     } catch (e) { /* keep last values; try again on next tick */ }
+  }
+
+  async function drawPowerGraph() {
+    try {
+      const h = await (await fetch('/api/power/history', { cache: 'no-store' })).json();
+      const svg = document.getElementById('pw-svg'), axis = document.getElementById('pw-axis');
+      const W = 1200, H = 190, end = h.now, start = end - 86400;
+      const pts = h.points.filter(p => p[0] >= start);
+      svg.replaceChildren(); axis.replaceChildren();
+      const ns = 'http://www.w3.org/2000/svg';
+      const mk = (tag, attrs) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+      const maxAbs = Math.max(1000, ...pts.map(p => Math.abs(p[1])));
+      const sy = v => H / 2 - (v / maxAbs) * (H / 2 - 6), sx = t => (t - start) / 86400 * W;
+      svg.append(mk('line', { x1: 0, x2: W, y1: H / 2, y2: H / 2, stroke: '#D2C9BC', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
+      document.getElementById('pw-graph-note').textContent =
+        pts.length ? `peak ±${fmtW(maxAbs)} ${unitW(maxAbs)} · import up, export down` : 'collecting data…';
+
+      // each point covers 30 s: draw as bars from the zero line so gaps stay visible
+      const bw = Math.max(1.2, W / 2880);
+      for (const [t, v] of pts) {
+        const y = sy(v), top = Math.min(y, H / 2), hgt = Math.abs(y - H / 2);
+        if (hgt < 0.5) continue;
+        svg.append(mk('rect', { x: sx(t), y: top, width: bw, height: hgt, fill: v < 0 ? '#5E9E6E' : '#D4A030' }));
+      }
+      for (let i = 0; i <= 4; i++) {                       // axis labels every 6 hours
+        const tt = new Date((start + i * 21600) * 1000), span = document.createElement('span');
+        span.textContent = String(tt.getHours()).padStart(2, '0') + ':00';
+        axis.append(span);
+      }
+    } catch (e) { /* keep the previous graph */ }
   }
 
   // ── Printer tab ────────────────────────────────────────────

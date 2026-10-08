@@ -926,37 +926,57 @@ body {
 .gr-ev.open   .dot { background: #D4A030; }
 .gr-ev.closed .dot { background: #5E9E6E; }
 
-/* ── Energy page: solar + P1 meter ──────────────────── */
-.en-top {
-  flex-shrink: 0;
-  margin: 24px 40px 0;
-  padding: 26px 36px 28px;
-  background: #EEEAE2;
-  border-radius: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.en-now { display: flex; align-items: baseline; gap: 22px; flex-wrap: wrap; }
-.en-now .tile-label { flex: 1 0 100%; }
-.en-power { font-size: 84px; font-weight: 700; line-height: 1; color: #A87818; font-variant-numeric: tabular-nums; }
-.en-power small { font-size: 34px; font-weight: 600; color: #9A8A78; margin-left: 10px; }
-.en-grid { font-size: 28px; font-weight: 700; color: #6B6258; text-transform: capitalize; }
-.en-bar { height: 14px; border-radius: 7px; background: #DDD5CA; overflow: hidden; }
-.en-bar i { display: block; height: 100%; width: 0; border-radius: 7px; background: #D4A030; transition: width 0.8s ease; }
-
-.en-tiles {
-  flex-shrink: 0;
-  margin: 20px 40px 0;
+/* ── Power page: P1 meter ───────────────────────────── */
+.pw-wrap {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  height: 130px;
+  grid-template-columns: 1fr 440px;
+  grid-template-rows: auto 1fr;
+  gap: 16px 20px;
+  padding: 18px 40px 16px;
 }
-.en-tiles .tile-value { font-size: 44px; }
+.pw-main { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 14px; }
+.pw-live, .pw-house { background: #EEEAE2; border-radius: 16px; padding: 16px 22px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pw-live { grid-column: 1 / -1; gap: 4px; }
+.pw-value { font-size: 72px; font-weight: 700; line-height: 1; color: #262320; font-variant-numeric: tabular-nums; }
+.pw-value small, .pw-house-val small { font-size: 28px; font-weight: 600; color: #9A8A78; margin-left: 8px; }
+.pw-live.export .pw-value { color: #4F8A5E; }
+.pw-live.import .pw-value { color: #A87818; }
+.pw-live.stale .pw-value  { color: #9A8A78; }
 
-.en-p1 { flex: 1; min-height: 0; padding: 0 40px; }
-.en-p1 .net-head { padding: 22px 4px 10px; }
-.en-p1-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.en-p1-grid .tile { height: 112px; }
-.en-p1-grid .tile-value { font-size: 32px; }
+.pw-gauge { margin-top: 6px; }
+.pw-track { position: relative; height: 16px; border-radius: 8px; background: #DDD5CA; overflow: hidden; }
+.pw-fill { position: absolute; top: 0; height: 100%; width: 0; background: #C9C0B3; transition: width 0.6s ease, left 0.6s ease; }
+.pw-live.export .pw-fill { background: #5E9E6E; }
+.pw-live.import .pw-fill { background: #D4A030; }
+.pw-zero { position: absolute; left: 50%; top: 0; width: 2px; height: 100%; margin-left: -1px; background: #9A8A78; z-index: 1; }
+.pw-scale { display: flex; justify-content: space-between; margin-top: 6px; font-size: 14px; font-weight: 600; color: #9A8A78; }
+
+.pw-house-val { font-size: 54px; font-weight: 700; line-height: 1; color: #262320; font-variant-numeric: tabular-nums; }
+.pw-house-sub { font-size: 16px; font-weight: 600; color: #9A8A78; }
+
+.pw-phases { grid-column: 2; display: flex; flex-direction: column; gap: 9px; background: #EEEAE2; border-radius: 16px; padding: 16px 20px; justify-content: center; }
+.pw-house { grid-column: 1; }
+.ph { display: grid; grid-template-columns: 30px 1fr 78px 120px; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
+.ph-n  { font-size: 18px; font-weight: 700; color: #262320; }
+.ph-w  { font-size: 18px; font-weight: 700; color: #262320; text-align: right; }
+.ph-va { font-size: 14px; font-weight: 600; color: #9A8A78; text-align: right; white-space: nowrap; }
+.ph-bar { position: relative; height: 12px; border-radius: 6px; background: #DDD5CA; overflow: hidden; }
+.ph-bar::after { content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: #9A8A78; }
+.ph-bar i { position: absolute; top: 0; height: 100%; border-radius: 6px; }
+.ph.import .ph-bar i { background: #D4A030; }
+.ph.export .ph-bar i { background: #5E9E6E; }
+
+.pw-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pw-today { display: flex; flex-direction: column; gap: 10px; }
+.pw-today .tile { height: 70px; padding: 0 20px; flex-direction: row; align-items: center; justify-content: space-between; }
+.pw-today .tile-value { font-size: 30px; }
+.pw-note { font-size: 13px; color: #B0A090; min-height: 16px; }
+.pw-health { font-size: 14px; font-weight: 600; line-height: 1.5; color: #9A8A78; }
+
+.pw-graph { grid-column: 1 / -1; background: #EEEAE2; border-radius: 16px; padding: 12px 20px 8px; display: flex; flex-direction: column; min-height: 0; }
+.pw-graph-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 18px; font-weight: 700; color: #262320; }
+.pw-graph-head .count { font-size: 14px; font-weight: 600; color: #9A8A78; }
+.pw-graph svg { flex: 1; min-height: 0; width: 100%; }
+.pw-axis { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #9A8A78; font-variant-numeric: tabular-nums; }
