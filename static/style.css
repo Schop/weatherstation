@@ -520,7 +520,7 @@ body {
 .net-devices:empty { display: none; }
 
 .net-found {
-  flex: 0 0 400px;
+  flex: 0 0 470px;
   min-height: 0;
   display: flex;
 }
@@ -543,14 +543,16 @@ body {
   height: 20px;
   line-height: 20px;
   white-space: pre;
-  overflow: hidden;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 15ch minmax(0, 1fr) auto;
+  column-gap: 1.5ch;
 }
-.tl > span { color: #9A958C; flex-shrink: 0; }
-.tl.away { color: #7A766E; }
-.tl.pg { color: #9A958C; }
+.tl > span { overflow: hidden; text-overflow: ellipsis; }   /* a long name/manufacturer is cut with … */
+.tl-r      { color: #9A958C; }
+.tl-vendor { color: #8A857C; }
+.tl.away   { color: #7A766E; }
+.tl.away .tl-r, .tl.away .tl-vendor { color: #66625B; }
+.tl.pg     { display: block; color: #9A958C; }
 
 .device {
   background: #EEEAE2;

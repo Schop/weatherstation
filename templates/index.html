@@ -483,10 +483,11 @@
     const right = dev.up ? (dev.ms != null ? Math.round(dev.ms) + 'ms' : '')
                          : (dev.last_seen ? fmtAgo(now - dev.last_seen) : 'away');
     const name = dev.unknown ? (dev.mac || 'unknown') : dev.name;
-    row.textContent = `${dev.host.padEnd(15)} ${name}`;
-    const r = document.createElement('span');
-    r.textContent = right;
-    row.append(r);
+    const mk = (cls, text) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; return e; };
+
+    const label = mk('tl-name', name);               // name, then the manufacturer in a dimmer colour
+    if (dev.vendor && dev.vendor !== name) label.append(mk('tl-vendor', '  ' + dev.vendor));
+    row.append(mk('tl-ip', dev.host), label, mk('tl-r', right));
     return row;
   }
 

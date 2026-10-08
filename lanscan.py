@@ -334,7 +334,7 @@ class Scanner:
                     parts.append(mac)
             devices.append({
                 "name": name or "Unknown device", "host": ip, "mac": mac,
-                "detail": " · ".join(parts), "private": private,
+                "detail": " · ".join(parts), "private": private, "vendor": vendor,
                 "up": e["up"], "ms": e["ms"], "last_seen": e["last_seen"],
                 "unknown": rank == 2, "_rank": rank,
             })
