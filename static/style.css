@@ -499,27 +499,38 @@ body {
 }
 .net-head .count { font-size: 18px; font-weight: 600; color: #9A8A78; }
 
-/* scrolling area holding the configured devices and everything discovered */
-.net-scroll {
+/* two columns: configured devices (cards) | everything detected (compact scrolling list) */
+.net-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  display: flex;
+  gap: 24px;
   padding: 0 40px 18px;
-  scrollbar-width: none;       /* touch scrolling, no scrollbar */
 }
-.net-scroll::-webkit-scrollbar { display: none; }
 
 .net-devices {
+  flex: 1;
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   grid-auto-rows: 78px;
   gap: 14px 20px;
   align-content: start;
 }
 .net-devices:empty { display: none; }
 
+.net-found {
+  flex: 0 0 380px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-left: 24px;
+  border-left: 1px solid #E0D8CE;
+}
+
 .net-sub {
-  padding: 22px 4px 10px;
+  flex-shrink: 0;
+  padding: 0 4px 10px;
   font-size: 18px;
   font-weight: 700;
   color: #9A8A78;
@@ -527,16 +538,21 @@ body {
 }
 
 .net-lan {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 66px;
-  gap: 12px 16px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: none;       /* touch scrolling, no scrollbar */
 }
-.device.lan { padding: 0 16px; gap: 12px; border-radius: 14px; }
-.device.lan .dev-name { font-size: 19px; }
-.device.lan .dev-addr { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.device.lan .dev-ms   { font-size: 15px; }
-.device.lan .dot { width: 12px; height: 12px; box-shadow: none !important; }
+.net-lan::-webkit-scrollbar { display: none; }
+
+.device.lan { flex-shrink: 0; height: 54px; padding: 0 14px; gap: 12px; border-radius: 12px; }
+.device.lan .dev-name { font-size: 18px; line-height: 1.15; }
+.device.lan .dev-addr { font-size: 13px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.device.lan .dev-ms   { font-size: 14px; }
+.device.lan .dot { width: 11px; height: 11px; box-shadow: none !important; }
 .device.away .dot { background: #C9C0B3; }
 .device.away .dev-name { color: #8A7E70; }
 .device.unknown .dev-name { color: #8A7E70; font-weight: 600; }
