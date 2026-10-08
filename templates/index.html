@@ -215,8 +215,12 @@
     <div class="net-body">
       <div class="net-devices" id="n-devices"></div>
       <div class="net-found" id="n-found" style="display:none">
-        <div class="net-sub">On the network</div>
-        <div class="net-lan" id="n-lan"></div>
+        <div class="term">
+          <div class="term-bar"><i></i><i></i><i></i><span id="n-term-title">lanscan</span></div>
+          <div class="term-prompt" id="n-term-prompt">$ lanscan</div>
+          <div class="term-list" id="n-lan"></div>
+          <div class="term-foot"><span id="n-term-foot"></span><b class="cursor">█</b></div>
+        </div>
       </div>
     </div>
 
@@ -429,8 +433,6 @@
       tcard.querySelector('.up').textContent   = '↑ ' + (t ? fmtRate(t.tx_bps) : '–');
       tcard.querySelector('.sub').textContent  = t ? t.iface : 'not available';
 
-      const scroll = document.getElementById('n-lan');
-      const keepAt = scroll.scrollTop;                 // rebuilding the list must not jump the scroll
       const box = document.getElementById('n-devices');
       box.replaceChildren();
       for (const dev of d.devices)
@@ -438,18 +440,11 @@
                               dev.host + (dev.port ? ':' + dev.port : ''),
                               dev.up ? Math.round(dev.ms) + ' ms' : 'offline'));
 
-      const lan = d.lan, lanBox = document.getElementById('n-lan');
-      lanBox.replaceChildren();
+      const lan = d.lan;
       const found = lan ? lan.devices : [];
-      for (const dev of found) {
-        const ms = dev.up
-          ? (dev.ms != null ? Math.round(dev.ms) + ' ms' : '')
-          : (dev.last_seen ? fmtAgo(d.now - dev.last_seen) : '');
-        const card = deviceCard(dev, 'device lan', dev.up ? 'up' : 'away', dev.detail, ms);
-        if (dev.unknown) card.classList.add('unknown');
-        lanBox.append(card);
-      }
       document.getElementById('n-found').style.display = found.length ? 'flex' : 'none';
+      termData = { devices: found, now: d.now, subnet: lan && lan.subnet, scanned: lan && lan.scanned };
+      renderTerminal();
 
       const all = d.devices.concat(found), up = all.filter(x => x.up).length;
       document.getElementById('n-count').textContent = all.length ? `${up} of ${all.length} online` : '';
@@ -461,7 +456,6 @@
                          : 'Scanning the network…';
         box.append(hint);
       }
-      scroll.scrollTop = keepAt;
     } catch (e) { /* keep last values; try again on next tick */ }
   }
 
@@ -484,10 +478,39 @@
     return el;
   }
 
-  // touching or scrolling the list counts as activity (the status screen closes itself after a minute)
-  document.getElementById('n-lan').addEventListener('scroll', () => {
-    if (idleTimer) { clearTimeout(idleTimer); idleTimer = setTimeout(closeSystem, 60000); }
-  }, { passive: true });
+  // ── Scan results as a terminal listing, paged when longer than the window ──
+  const TERM_LINE_H = 26, TERM_PAGE_MS = 8000;
+  let termData = { devices: [] }, termPage = 0, termPages = 1;
+
+  function termLine(dev, now) {
+    const row = document.createElement('div');
+    row.className = 'tl ' + (dev.up ? 'up' : 'away') + (dev.unknown ? ' unknown' : '');
+    const mk = (cls, text) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; return e; };
+    const right = dev.up ? (dev.ms != null ? Math.round(dev.ms) + ' ms' : '')
+                         : (dev.last_seen ? fmtAgo(now - dev.last_seen) : 'away');
+    row.append(mk('tl-dot', dev.up ? '●' : '○'), mk('tl-ip', dev.host),
+               mk('tl-name', dev.unknown ? (dev.mac || 'unknown') : dev.name), mk('tl-r', right));
+    return row;
+  }
+
+  function renderTerminal() {
+    const list = document.getElementById('n-lan');
+    if (!list.clientHeight) return;                      // tab hidden: nothing to measure
+    const devs = termData.devices;
+    const cap = Math.max(1, Math.floor(list.clientHeight / TERM_LINE_H));
+    termPages = Math.max(1, Math.ceil(devs.length / cap));
+    if (termPage >= termPages) termPage = 0;
+    list.replaceChildren(...devs.slice(termPage * cap, (termPage + 1) * cap)
+                                .map(dev => termLine(dev, termData.now)));
+
+    const up = devs.filter(x => x.up).length;
+    document.getElementById('n-term-title').textContent = 'lanscan — ' + (termData.subnet || '');
+    document.getElementById('n-term-prompt').textContent = '$ lanscan ' + (termData.subnet || '');
+    document.getElementById('n-term-foot').textContent =
+      `${up} up · ${devs.length - up} away` + (termData.scanned ? ` · ${termData.scanned}` : '') +
+      (termPages > 1 ? ` · page ${termPage + 1}/${termPages}` : '') + ' ';
+  }
+  setInterval(() => { if (termPages > 1) { termPage++; renderTerminal(); } }, TERM_PAGE_MS);
 
   // ── Printer tab ────────────────────────────────────────────
   const PRINT_STATES = {
