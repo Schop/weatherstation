@@ -215,12 +215,7 @@
     <div class="net-body">
       <div class="net-devices" id="n-devices"></div>
       <div class="net-found" id="n-found" style="display:none">
-        <div class="term">
-          <div class="term-bar"><i></i><i></i><i></i><span id="n-term-title">lanscan</span></div>
-          <div class="term-prompt" id="n-term-prompt">$ lanscan</div>
-          <div class="term-list" id="n-lan"></div>
-          <div class="term-foot"><span id="n-term-foot"></span><b class="cursor">█</b></div>
-        </div>
+        <div class="term" id="n-lan"></div>
       </div>
     </div>
 
@@ -479,36 +474,38 @@
   }
 
   // ── Scan results as a terminal listing, paged when longer than the window ──
-  const TERM_LINE_H = 26, TERM_PAGE_MS = 8000;
+  const TERM_LINE_H = 20, TERM_PAD = 24, TERM_PAGE_MS = 8000;
   let termData = { devices: [] }, termPage = 0, termPages = 1;
 
   function termLine(dev, now) {
     const row = document.createElement('div');
-    row.className = 'tl ' + (dev.up ? 'up' : 'away') + (dev.unknown ? ' unknown' : '');
-    const mk = (cls, text) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; return e; };
-    const right = dev.up ? (dev.ms != null ? Math.round(dev.ms) + ' ms' : '')
+    row.className = 'tl' + (dev.up ? '' : ' away');
+    const right = dev.up ? (dev.ms != null ? Math.round(dev.ms) + 'ms' : '')
                          : (dev.last_seen ? fmtAgo(now - dev.last_seen) : 'away');
-    row.append(mk('tl-dot', dev.up ? '●' : '○'), mk('tl-ip', dev.host),
-               mk('tl-name', dev.unknown ? (dev.mac || 'unknown') : dev.name), mk('tl-r', right));
+    const name = dev.unknown ? (dev.mac || 'unknown') : dev.name;
+    row.textContent = `${dev.host.padEnd(15)} ${name}`;
+    const r = document.createElement('span');
+    r.textContent = right;
+    row.append(r);
     return row;
   }
 
   function renderTerminal() {
-    const list = document.getElementById('n-lan');
-    if (!list.clientHeight) return;                      // tab hidden: nothing to measure
+    const box = document.getElementById('n-lan');
+    if (!box.clientHeight) return;                       // tab hidden: nothing to measure
     const devs = termData.devices;
-    const cap = Math.max(1, Math.floor(list.clientHeight / TERM_LINE_H));
+    const cap = Math.max(1, Math.floor((box.clientHeight - TERM_PAD - TERM_LINE_H) / TERM_LINE_H));
     termPages = Math.max(1, Math.ceil(devs.length / cap));
     if (termPage >= termPages) termPage = 0;
-    list.replaceChildren(...devs.slice(termPage * cap, (termPage + 1) * cap)
-                                .map(dev => termLine(dev, termData.now)));
 
-    const up = devs.filter(x => x.up).length;
-    document.getElementById('n-term-title').textContent = 'lanscan — ' + (termData.subnet || '');
-    document.getElementById('n-term-prompt').textContent = '$ lanscan ' + (termData.subnet || '');
-    document.getElementById('n-term-foot').textContent =
-      `${up} up · ${devs.length - up} away` + (termData.scanned ? ` · ${termData.scanned}` : '') +
-      (termPages > 1 ? ` · page ${termPage + 1}/${termPages}` : '') + ' ';
+    const lines = devs.slice(termPage * cap, (termPage + 1) * cap).map(d => termLine(d, termData.now));
+    if (termPages > 1) {                                 // only when paging: which page this is
+      const pg = document.createElement('div');
+      pg.className = 'tl pg';
+      pg.textContent = `-- ${termPage + 1}/${termPages} --`;
+      lines.push(pg);
+    }
+    box.replaceChildren(...lines);
   }
   setInterval(() => { if (termPages > 1) { termPage++; renderTerminal(); } }, TERM_PAGE_MS);
 
