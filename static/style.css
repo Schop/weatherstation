@@ -185,7 +185,8 @@ body {
 }
 
 /* rain outlook from Buienradar, e.g. "Regen vanaf 14:55" */
-.rain-now { font-size: 30px; font-weight: 700; line-height: 1.15; margin-top: 10px; color: var(--text-2); }
+.rain-now { font-size: 30px; font-weight: 700; line-height: 1.15; margin-top: 10px; color: var(--text-2);
+            text-wrap: balance; overflow-wrap: anywhere; max-height: 2.3em; overflow: hidden; }
 .rain-now.dry  { color: var(--green); }
 .rain-now.soon, .rain-now.wet { color: var(--blue); }
 
