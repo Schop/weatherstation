@@ -6,6 +6,8 @@ connect instead (a refused connection still counts as up: the host answered).
 Throughput and the default gateway come from /proc (Linux); both degrade to None.
 """
 
+import json
+import os
 import re
 import shutil
 import socket
@@ -18,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 INTERNET_HOST = "1.1.1.1"
 CACHE_SECONDS = 3
+SEEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "device_seen.json")
 
 _PING = shutil.which("ping")
 _IS_WIN = sys.platform.startswith("win")
@@ -27,6 +30,8 @@ _lock = threading.Lock()
 _cache = None
 _cache_ts = 0.0
 _prev_traffic = None   # (timestamp, iface, rx_bytes, tx_bytes)
+_seen = None           # "host[:port]" -> epoch of the last successful probe (loaded lazily)
+_seen_saved = 0.0       # when the file was last written
 
 
 def tcp_probe(host, port, timeout=1.0):
@@ -104,6 +109,37 @@ def traffic(iface):
     return rate
 
 
+def _seen_key(d):
+    return d["host"] + (f":{d['port']}" if d.get("port") else "")
+
+
+def _load_seen():
+    global _seen
+    if _seen is None:
+        try:
+            with open(SEEN_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+            _seen = {k: v for k, v in data.items() if isinstance(v, (int, float))}
+        except (OSError, ValueError, AttributeError):
+            _seen = {}
+    return _seen
+
+
+def _save_seen(now):
+    """Write the times to disk, at most once a minute (they only matter while a device is down)."""
+    global _seen_saved
+    if now - _seen_saved < 60:
+        return
+    _seen_saved = now
+    tmp = SEEN_FILE + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(_seen, f)
+        os.replace(tmp, SEEN_FILE)
+    except OSError as exc:
+        print(f"[netstatus] could not save last-seen times: {exc}", file=sys.stderr)
+
+
 def snapshot(devices):
     """Probe internet, gateway and configured devices (cached for a few seconds)."""
     global _cache, _cache_ts
@@ -120,6 +156,13 @@ def snapshot(devices):
             gw_ms = f_gw.result() if f_gw else None
             dev_ms = [f.result() for f in f_dev]
 
+        # remember when each configured device last answered ("last seen" while it is down)
+        seen, now = _load_seen(), time.time()
+        for d, ms in zip(devices, dev_ms):
+            if ms is not None:
+                seen[_seen_key(d)] = now
+        _save_seen(now)
+
         _cache = {
             "internet": {"up": net_ms is not None, "ms": net_ms, "host": INTERNET_HOST},
             "gateway": {"ip": gw[1], "iface": gw[0], "up": gw_ms is not None,
@@ -127,7 +170,8 @@ def snapshot(devices):
             "traffic": traffic(gw[0] if gw else None),
             "devices": [
                 {"name": d["name"], "host": d["host"], "port": d.get("port"),
-                 "up": ms is not None, "ms": ms}
+                 "up": ms is not None, "ms": ms,
+                 "last_seen": now if ms is not None else seen.get(_seen_key(d))}
                 for d, ms in zip(devices, dev_ms)
             ],
             "checked": time.strftime("%H:%M:%S"),
