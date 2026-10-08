@@ -69,6 +69,28 @@ body {
 }
 
 /* clock with the date underneath, so long dates never reach the tabs */
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* garage door badge: only shown while the door is open */
+.garage-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 14px;
+  border-radius: 999px;
+  background: #F1DEBB;
+  color: #7A5A14;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.garage-badge svg { width: 26px; height: 26px; fill: currentColor; }
+.garage-badge.warn { background: #F0D0CA; color: #9A3F33; }
+
 .top-bar-left {
   display: flex;
   flex-direction: column;

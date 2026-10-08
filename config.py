@@ -8,6 +8,15 @@ REFRESH_INTERVAL = 600  # seconds between API calls
 FPS = 10
 WIND_WARN_KMH = 30  # wind tile turns red above this speed
 
+# --- Garage door (MQTT, read-only) ---
+# The broker login goes in config_local.py (git-ignored), not here.
+GARAGE_MQTT_HOST = "192.168.1.146"
+GARAGE_MQTT_PORT = 1883
+GARAGE_MQTT_USER = ""
+GARAGE_MQTT_PASSWORD = ""
+GARAGE_TOPIC = "home/garagedoor/state"     # payloads: OPEN / CLOSED
+GARAGE_WARN_MINUTES = 15                   # badge turns red when open longer than this
+
 # --- Rain radar ---
 # Zoom of Buienradar's map widget: 6 = whole region, 8 = ~200 km wide,
 # 11 = ~100 km, 13 = local. (These are the widget's own zoom codes.)

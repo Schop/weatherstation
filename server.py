@@ -10,6 +10,7 @@ import threading
 import time
 import bambu
 import config
+import garage
 import lanscan
 import netstatus
 import radar
@@ -26,6 +27,7 @@ _lock = threading.Lock()
 _data = None          # WeatherData | None
 _state = "loading"   # "loading" | "ok" | "error"
 _printer = None       # bambu.Printer | None (started in __main__ if configured)
+_garage = None        # garage.GarageDoor | None (started in __main__ if configured)
 _scanner = None       # lanscan.Scanner | None (started in __main__ if enabled)
 
 
@@ -153,6 +155,16 @@ def rain():
     return resp
 
 
+@app.route("/api/garage")
+def garage_door():
+    if _garage is None:
+        resp = jsonify({"configured": False})
+    else:
+        resp = jsonify(dict(_garage.snapshot(), warn_minutes=config.GARAGE_WARN_MINUTES))
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @app.route("/api/printer")
 def printer():
     if _printer is None:
@@ -185,6 +197,12 @@ if __name__ == "__main__":
         _printer = bambu.Printer(config.BAMBU_HOST, config.BAMBU_SERIAL,
                                  config.BAMBU_ACCESS_CODE)
         _printer.start()
+
+    if config.GARAGE_MQTT_USER and config.GARAGE_TOPIC:
+        _garage = garage.GarageDoor(config.GARAGE_MQTT_HOST, config.GARAGE_MQTT_PORT,
+                                    config.GARAGE_MQTT_USER, config.GARAGE_MQTT_PASSWORD,
+                                    config.GARAGE_TOPIC)
+        _garage.start()
 
     if config.NETWORK_SCAN:
         _scanner = lanscan.Scanner(config.NETWORK_SUBNET, config.NETWORK_LABELS)

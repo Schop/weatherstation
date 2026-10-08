@@ -25,7 +25,13 @@
       <span class="tab active" id="mtab-home"  onclick="showMainTab('home')">Home</span>
       <span class="tab"        id="mtab-radar" onclick="showMainTab('radar')">Radar</span>
     </div>
-    <div class="location">{{ cfg.LOCATION_NAME }}</div>
+    <div class="top-bar-right">
+      <div class="garage-badge" id="garage-badge" style="display:none">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6v10h-3v-8H6v8H3z"/><path d="M8 14h8v1.6H8zm0 3h8v1.6H8z"/></svg>
+        <span id="garage-text">Garage open</span>
+      </div>
+      <div class="location">{{ cfg.LOCATION_NAME }}</div>
+    </div>
   </div>
 
   <div id="home-page">
@@ -509,6 +515,35 @@
     box.replaceChildren(...lines);
   }
   setInterval(() => { if (termPages > 1) { termPage++; renderTerminal(); } }, TERM_PAGE_MS);
+
+  // ── Garage door badge (top bar; only visible while the door is open) ──
+  let garageOpenSince = null, garageWarnMin = 15;
+
+  function renderGarage() {
+    const badge = document.getElementById('garage-badge');
+    if (garageOpenSince === null) { badge.style.display = 'none'; return; }
+    const open = garageOpenSince > 0 ? Math.max(0, (Date.now() - garageOpenSince) / 60000) : null;
+    badge.style.display = 'flex';
+    badge.classList.toggle('warn', open !== null && open >= garageWarnMin);
+    document.getElementById('garage-text').textContent =
+      open === null ? 'Garage open' : 'Garage open · ' + fmtDuration(Math.floor(open * 60)).replace(/^0m$/, '<1m');
+  }
+
+  async function pollGarage() {
+    try {
+      const d = await (await fetch('/api/garage', { cache: 'no-store' })).json();
+      garageWarnMin = d.warn_minutes || 15;
+      if (d.state === 'open')
+        // age is only known if we saw it change; otherwise show "open" without a time (0 = unknown)
+        garageOpenSince = d.age != null ? Date.now() - d.age * 1000 : 0;
+      else
+        garageOpenSince = null;
+      renderGarage();
+    } catch (e) { /* keep the last state; try again on the next poll */ }
+  }
+  pollGarage();
+  setInterval(pollGarage, 5000);
+  setInterval(renderGarage, 30000);                      // keeps "open · 12m" current between polls
 
   // ── Printer tab ────────────────────────────────────────────
   const PRINT_STATES = {

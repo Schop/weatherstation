@@ -4,3 +4,8 @@
 # screen (Settings > Network / LAN mode / Device info).
 BAMBU_SERIAL = ""
 BAMBU_ACCESS_CODE = ""
+
+# Garage door: a (read-only) user on the Home Assistant MQTT broker.
+# Create one in Home Assistant under Settings > People > Users.
+GARAGE_MQTT_USER = ""
+GARAGE_MQTT_PASSWORD = ""
