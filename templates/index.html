@@ -754,7 +754,7 @@
 
       const maxAbs = Math.max(1000, ...pts.map(p => Math.abs(p[1])));
       const sy = v => H / 2 - (v / maxAbs) * (H / 2 - 6), sx = t => (t - start) / 86400 * W;
-      svg.append(mk('line', { x1: 0, x2: W, y1: H / 2, y2: H / 2, stroke: '#D2C9BC', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
+      svg.append(mk('line', { x1: 0, x2: W, y1: H / 2, y2: H / 2, stroke: '#3A3F45', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
       document.getElementById('pw-graph-note').textContent =
         pts.length ? `peak ±${fmtW(maxAbs)} ${unitW(maxAbs)} · import up, export down` : 'collecting data…';
 
@@ -763,7 +763,7 @@
       for (const [t, v] of pts) {
         const y = sy(v), top = Math.min(y, H / 2), hgt = Math.abs(y - H / 2);
         if (hgt < 0.5) continue;
-        svg.append(mk('rect', { x: sx(t), y: top, width: bw, height: hgt, fill: v < 0 ? '#5E9E6E' : '#D4A030' }));
+        svg.append(mk('rect', { x: sx(t), y: top, width: bw, height: hgt, fill: v < 0 ? '#58B070' : '#E0A040' }));
       }
       for (let i = 0; i <= 4; i++) {                       // axis labels every 6 hours
         const tt = new Date((start + i * 21600) * 1000), span = document.createElement('span');
