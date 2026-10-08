@@ -184,6 +184,11 @@ body {
   font-weight: 600;
 }
 
+/* rain outlook from Buienradar, e.g. "Regen vanaf 14:55" */
+.rain-now { font-size: 30px; font-weight: 700; line-height: 1.15; margin-top: 10px; color: var(--text-2); }
+.rain-now.dry  { color: var(--green); }
+.rain-now.soon, .rain-now.wet { color: var(--blue); }
+
 .precip-main { color: var(--text-2); font-weight: 600; margin-top: 6px; font-size: 28px; }
 .precip-main.wet { color: var(--blue); }
 

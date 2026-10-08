@@ -40,6 +40,7 @@
     <div class="weather-info">
       <div class="temp">{{ data.temp | round | int }}°C</div>
       <div class="condition">{{ data.condition }}</div>
+      <div class="rain-now" id="rain-now" style="display:none"></div>
       <div class="precip-main{% if data.precip_prob > 20 %} wet{% endif %}">Kans op neerslag: {{ data.precip_prob }}%</div>
       <div class="feels">Voelt als {{ data.feels_like | round | int }}°C</div>
     </div>
@@ -852,6 +853,21 @@
     } catch (e) { /* keep last values; try again on next tick */ }
   }
   function setTile(id, v) { document.querySelector('#' + id + ' .tile-value').textContent = v; }
+
+  // ── Rain outlook on the Home page (same Buienradar data as the Radar tab) ──
+  async function refreshRainNow() {
+    const el = document.getElementById('rain-now');
+    if (!el) return;                                     // no weather data on screen (loading/error page)
+    try {
+      const d = await (await fetch('/api/rain', { cache: 'no-store' })).json();
+      if (!d.points) { el.style.display = 'none'; return; }   // unavailable: show nothing rather than a guess
+      el.className = 'rain-now ' + d.state;
+      el.textContent = d.summary;
+      el.style.display = 'block';
+    } catch (e) { /* keep what is shown */ }
+  }
+  refreshRainNow();
+  setInterval(refreshRainNow, 120000);                   // the server caches it for 2 minutes
 
   // ── Radar tab ──────────────────────────────────────────────
   let radarLoaded = 0;
