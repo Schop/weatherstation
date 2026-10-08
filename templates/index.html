@@ -151,6 +151,7 @@
       <span class="tab"        id="tab-network" onclick="event.stopPropagation(); showTab('network')">Network</span>
       <span class="tab"        id="tab-printer" onclick="event.stopPropagation(); showTab('printer')">3D Printer</span>
       <span class="tab"        id="tab-garage"  onclick="event.stopPropagation(); showTab('garage')">Garage</span>
+      <span class="tab"        id="tab-energy"  onclick="event.stopPropagation(); showTab('energy')">Energy</span>
     </div>
     <span class="sclock" id="system-clock"></span>
   </div>
@@ -297,6 +298,32 @@
 
   </div><!-- #page-garage -->
 
+  <div class="tab-page" id="page-energy" style="display:none">
+
+    <div class="en-top" id="en-top">
+      <div class="en-now">
+        <span class="tile-label">Solar power now</span>
+        <span class="en-power"><span id="en-power">–</span><small id="en-power-unit">W</small></span>
+        <span class="en-grid" id="en-grid">&nbsp;</span>
+      </div>
+      <div class="en-bar"><i id="en-bar-fill"></i></div>
+    </div>
+
+    <div class="en-tiles" id="en-tiles">
+      <div class="tile" id="en-today"><span class="tile-label">Today</span><span class="tile-value">–</span></div>
+      <div class="tile" id="en-month"><span class="tile-label">This month</span><span class="tile-value">–</span></div>
+      <div class="tile" id="en-year"><span class="tile-label">This year</span><span class="tile-value">–</span></div>
+    </div>
+
+    <div class="en-p1" id="en-p1" style="display:none">
+      <div class="net-head"><span>P1 meter</span></div>
+      <div class="en-p1-grid" id="en-p1-grid"></div>
+    </div>
+
+    <div class="pr-msg" id="en-msg" style="display:none"></div>
+
+  </div><!-- #page-energy -->
+
 
   <div class="sys-footer">tap to go back</div>
 
@@ -357,12 +384,12 @@
 
   function showTab(tab) {
     currentTab = tab;
-    for (const t of ['system', 'network', 'printer', 'garage']) {
+    for (const t of ['system', 'network', 'printer', 'garage', 'energy']) {
       document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     }
-    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage }[tab];
-    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000 }[tab];
+    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage, energy: refreshEnergy }[tab];
+    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000, energy: 5000 }[tab];
     clearInterval(sysTimer); clearTimeout(idleTimer);
     refresh();
     sysTimer  = setInterval(refresh, every);
@@ -616,6 +643,65 @@
       }
       document.getElementById('gr-total').textContent =
         d.total > d.events.length ? `last ${d.events.length} of ${d.total}` : (d.total ? `${d.total} events` : '');
+    } catch (e) { /* keep last values; try again on next tick */ }
+  }
+
+  // ── Energy tab: solar + P1 meter (via Home Assistant) ─────
+  const SOLAR_PEAK_W = {{ cfg.SOLAR_PEAK_W }};            // full-scale of the power bar
+
+  // value + unit -> compact text; kWh/Wh and W/kW get sensible precision
+  function fmtEnergy(s) {
+    if (!s || !s.ok || s.value == null) return '–';
+    let v = s.value, u = s.unit || '';
+    if (u === 'Wh' && v >= 1000) { v /= 1000; u = 'kWh'; }
+    const txt = Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2);
+    return txt + (u ? ' ' + u : '');
+  }
+  function showEnergyMessage(text) {
+    for (const id of ['en-top', 'en-tiles', 'en-p1']) document.getElementById(id).style.display = 'none';
+    const m = document.getElementById('en-msg');
+    m.textContent = text;
+    m.style.display = 'flex';
+  }
+
+  async function refreshEnergy() {
+    try {
+      const d = await (await fetch('/api/energy', { cache: 'no-store' })).json();
+      if (!d.configured) { showEnergyMessage('Home Assistant not configured — set HA_TOKEN in config_local.py'); return; }
+      const sol = d.solar || {};
+      if (d.error && !Object.values(sol).some(s => s)) { showEnergyMessage('Home Assistant: ' + d.error); return; }
+
+      document.getElementById('en-msg').style.display = 'none';
+      document.getElementById('en-top').style.display = 'flex';
+      document.getElementById('en-tiles').style.display = 'grid';
+
+      // power now (shown in kW from 1000 W up)
+      const p = sol.power;
+      let watts = p && p.ok && p.value != null ? (p.unit === 'kW' ? p.value * 1000 : p.value) : null;
+      document.getElementById('en-power').textContent =
+        watts == null ? '–' : (watts >= 1000 ? (watts / 1000).toFixed(2) : Math.round(watts));
+      document.getElementById('en-power-unit').textContent = watts != null && watts >= 1000 ? 'kW' : 'W';
+      document.getElementById('en-bar-fill').style.width =
+        watts == null ? '0%' : Math.max(0, Math.min(100, 100 * watts / SOLAR_PEAK_W)) + '%';
+      const g = sol.grid;
+      document.getElementById('en-grid').textContent =
+        g && g.ok ? g.state : (d.error ? '' : ' ');
+
+      for (const [id, key] of [['en-today', 'today'], ['en-month', 'month'], ['en-year', 'year']])
+        document.querySelector('#' + id + ' .tile-value').textContent = fmtEnergy(sol[key]);
+
+      // P1 meter: whatever entities are configured
+      const p1 = d.p1 || [], box = document.getElementById('en-p1-grid');
+      document.getElementById('en-p1').style.display = p1.length ? 'block' : 'none';
+      box.replaceChildren();
+      for (const s of p1) {
+        const t = document.createElement('div');
+        t.className = 'tile';
+        const l = document.createElement('span'); l.className = 'tile-label'; l.textContent = s.label;
+        const v = document.createElement('span'); v.className = 'tile-value'; v.textContent = fmtEnergy(s);
+        t.append(l, v);
+        box.append(t);
+      }
     } catch (e) { /* keep last values; try again on next tick */ }
   }
 

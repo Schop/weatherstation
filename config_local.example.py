@@ -9,3 +9,6 @@ BAMBU_ACCESS_CODE = ""
 # Create one in Home Assistant under Settings > People > Users.
 GARAGE_MQTT_USER = ""
 GARAGE_MQTT_PASSWORD = ""
+
+# Home Assistant: a long-lived access token (profile > Security > Long-lived access tokens).
+HA_TOKEN = ""

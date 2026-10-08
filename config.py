@@ -16,6 +16,26 @@ GARAGE_MQTT_USER = ""
 GARAGE_MQTT_PASSWORD = ""
 GARAGE_TOPIC = "home/garagedoor/state"     # payloads: OPEN / CLOSED
 
+# --- Home Assistant (solar + P1 meter; read-only REST API) ---
+# The access token goes in config_local.py (git-ignored), not here.
+HA_URL = "http://192.168.1.146:8123"
+HA_TOKEN = ""
+HA_SOLAR = {
+    "power": "sensor.solaredge_current_power",
+    "grid":  "sensor.garage_solaredge_grid_flow_direction",
+    "today": "sensor.solaredge_energy_today",
+    "month": "sensor.solaredge_energy_this_month",
+    "year":  "sensor.solaredge_energy_this_year",
+}
+SOLAR_PEAK_W = 5000      # the power bar is full at this many watts (your inverter's size)
+# P1 meter sensors to show, in order (power is positive when importing from the grid).
+HA_P1 = [
+    {"label": "Grid power", "entity": "sensor.p1_meter_power"},
+    {"label": "Imported",   "entity": "sensor.p1_meter_energy_import"},
+    {"label": "Exported",   "entity": "sensor.p1_meter_energy_export"},
+    {"label": "Gas",        "entity": "sensor.gas_meter_gas"},
+]
+
 # --- Rain radar ---
 # Zoom of Buienradar's map widget: 6 = whole region, 8 = ~200 km wide,
 # 11 = ~100 km, 13 = local. (These are the widget's own zoom codes.)

@@ -11,6 +11,7 @@ import time
 import bambu
 import config
 import garage
+import homeassistant
 import lanscan
 import netstatus
 import radar
@@ -161,6 +162,26 @@ def garage_door():
         resp = jsonify({"configured": False})
     else:
         resp = jsonify(_garage.snapshot())
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/energy")
+def energy():
+    if not config.HA_TOKEN:
+        resp = jsonify({"configured": False})
+    else:
+        ids = list(config.HA_SOLAR.values()) + [p["entity"] for p in config.HA_P1]
+        res = homeassistant.fetch_states(config.HA_URL, config.HA_TOKEN, ids)
+        got = res["states"]
+        resp = jsonify({
+            "configured": True,
+            "error": res["error"],
+            "solar": {k: got.get(e) for k, e in config.HA_SOLAR.items()},
+            "p1": [dict(got.get(p["entity"]) or {}, label=p["label"], entity=p["entity"])
+                   for p in config.HA_P1],
+            "now": time.time(),
+        })
     resp.headers["Cache-Control"] = "no-store"
     return resp
 
