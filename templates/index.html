@@ -33,11 +33,11 @@
   <div id="home-page">
 
   {% if data %}
-  <div class="main-content" onclick="showMainTab('radar')">
+  <div class="main-content">
 
     <div class="hero"><i class="icon wi {{ main_icon }}"></i></div>
 
-    <div class="weather-info">
+    <div class="weather-info" onclick="showMainTab('radar')">
       <div class="temp">{{ data.temp | round | int }}°C</div>
       <div class="condition">{{ data.condition }}</div>
       <div class="rain-now" id="rain-now" style="display:none"></div>
@@ -45,7 +45,7 @@
       <div class="feels">Voelt als {{ data.feels_like | round | int }}°C</div>
     </div>
 
-    <div class="waste-panel" id="waste-panel" style="display:none">
+    <div class="waste-panel" id="waste-panel" style="display:none" onclick="openSystem('waste')">
       <div class="wp-head">Afvalkalender</div>
       <div class="wp-list" id="waste-tile"></div>
     </div>

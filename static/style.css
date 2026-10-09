@@ -168,6 +168,7 @@ body {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 }
 
 .temp {
@@ -1104,7 +1105,9 @@ body {
   display: none;
   flex-direction: column;
   gap: 8px;
+  cursor: pointer;
 }
+.waste-panel:active { background: var(--card-2); }
 .wp-head { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-2); }
 .wp-list { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; }
 .wt-row { flex: 1; display: flex; align-items: center; gap: 16px; padding: 0 12px; border-radius: 12px; min-height: 0; }
