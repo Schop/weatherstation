@@ -507,7 +507,7 @@
       for (const dev of d.devices)
         box.append(deviceCard(dev, 'device', dev.up ? 'up' : 'down',
                               dev.host + (dev.port ? ':' + dev.port : ''),
-                              dev.up ? Math.round(dev.ms) + ' ms'
+                              dev.up ? (dev.ms != null ? Math.round(dev.ms) + ' ms' : 'online')
                                      : (dev.last_seen ? fmtAgo(d.now - dev.last_seen) : 'never seen')));
 
       const lan = d.lan;

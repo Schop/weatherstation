@@ -63,8 +63,35 @@ def ping(host, timeout=1.0):
     return float(m.group(1)) if m else None
 
 
+def arp_alive(host):
+    """True if the kernel has just confirmed this host on the local network (ARP/neighbour table).
+
+    Devices that drop ping (typically a PC's firewall) still answer ARP, which cannot be
+    blocked. Only a REACHABLE entry counts: STALE ones linger for minutes after a device
+    has left. Linux only (`ip neigh`); elsewhere returns False.
+    """
+    ipcmd = shutil.which("ip")
+    if not ipcmd:
+        return False
+    try:
+        out = subprocess.run([ipcmd, "-4", "neigh", "show", host], capture_output=True,
+                             text=True, timeout=3).stdout
+    except (subprocess.TimeoutExpired, OSError):
+        return False
+    return any("lladdr" in line and line.split()[-1].upper() == "REACHABLE"
+               for line in out.splitlines())
+
+
+ARP_ONLY = -1.0      # marker: up according to ARP, but no timing (the device ignores ping)
+
+
 def _check(host, port=None):
-    return tcp_probe(host, port) if port else ping(host)
+    """Latency in ms, or None if down. Ping (or TCP when a port is given); if a pinged host does
+    not answer but the kernel has just confirmed it via ARP, it counts as up with no timing."""
+    ms = tcp_probe(host, port) if port else ping(host)
+    if ms is None and not port and arp_alive(host):
+        return ARP_ONLY
+    return ms
 
 
 def default_gateway():
@@ -170,7 +197,7 @@ def snapshot(devices):
             "traffic": traffic(gw[0] if gw else None),
             "devices": [
                 {"name": d["name"], "host": d["host"], "port": d.get("port"),
-                 "up": ms is not None, "ms": ms,
+                 "up": ms is not None, "ms": ms if ms != ARP_ONLY else None, "via": "arp" if ms == ARP_ONLY else None,
                  "last_seen": now if ms is not None else seen.get(_seen_key(d))}
                 for d, ms in zip(devices, dev_ms)
             ],
