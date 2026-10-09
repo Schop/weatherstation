@@ -8,10 +8,10 @@ Pi kiosk: chromium-browser --kiosk --noerrdialogs --disable-infobars http://loca
 
 import threading
 import time
-import bambu
 import config
 import garage
 import homeassistant
+import solaredge
 import p1
 import publicip
 import speedtest
@@ -31,10 +31,10 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 _lock = threading.Lock()
 _data = None          # WeatherData | None
 _state = "loading"   # "loading" | "ok" | "error"
-_printer = None       # bambu.Printer | None (started in __main__ if configured)
 _garage = None        # garage.GarageDoor | None (started in __main__ if configured)
 _p1 = None            # p1.Meter | None (started in __main__ if configured)
 _speedtest = speedtest.SpeedTest()
+_solar = None          # solaredge.Inverter | None (started in __main__ if configured)
 _publicip = publicip.PublicIP()
 _scanner = None       # lanscan.Scanner | None (started in __main__ if enabled)
 
@@ -192,7 +192,11 @@ def power_history():
 
 
 def _solar_watts():
-    """Current solar production in watts from Home Assistant (None if unavailable)."""
+    """Current solar production in watts: the inverter itself (live, local) first, Home Assistant as a fallback."""
+    if _solar is not None:
+        w = _solar.live_watts()
+        if w is not None:
+            return w
     if not (config.HA_TOKEN and config.HA_SOLAR_POWER):
         return None
     res = homeassistant.fetch_states(config.HA_URL, config.HA_TOKEN, [config.HA_SOLAR_POWER])
@@ -200,16 +204,6 @@ def _solar_watts():
     if not st or not st["ok"] or st["value"] is None:
         return None
     return st["value"] * 1000 if st["unit"] == "kW" else st["value"]
-
-
-@app.route("/api/printer")
-def printer():
-    if _printer is None:
-        resp = jsonify({"configured": False})
-    else:
-        resp = jsonify(_printer.snapshot())
-    resp.headers["Cache-Control"] = "no-store"
-    return resp
 
 
 @app.route("/api/speedtest", methods=["GET", "POST"])
@@ -226,6 +220,20 @@ def speed_test():
 def waste_calendar():
     data = waste.calendar(config.WASTE_COMPANY_CODE, config.WASTE_POSTCODE, config.WASTE_HOUSENUMBER)
     resp = jsonify(waste.reparse_for_today(data) if data else {"error": "unavailable"})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/solar")
+def solar():
+    resp = jsonify(_solar.snapshot() if _solar is not None else {"configured": False})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/solar/history")
+def solar_history():
+    resp = jsonify(_solar.history() if _solar is not None else {"points": []})
     resp.headers["Cache-Control"] = "no-store"
     return resp
 
@@ -248,16 +256,16 @@ if __name__ == "__main__":
                          daemon=True, name="fetch")
     t.start()
 
-    if config.BAMBU_SERIAL and config.BAMBU_ACCESS_CODE:
-        _printer = bambu.Printer(config.BAMBU_HOST, config.BAMBU_SERIAL,
-                                 config.BAMBU_ACCESS_CODE)
-        _printer.start()
-
     if config.GARAGE_MQTT_USER and config.GARAGE_TOPIC:
         _garage = garage.GarageDoor(config.GARAGE_MQTT_HOST, config.GARAGE_MQTT_PORT,
                                     config.GARAGE_MQTT_USER, config.GARAGE_MQTT_PASSWORD,
                                     config.GARAGE_TOPIC)
         _garage.start()
+
+    if config.SOLAR_HOST:
+        _solar = solaredge.Inverter(config.SOLAR_HOST, config.SOLAR_PORT, config.SOLAR_UNIT,
+                                   rated_w=config.SOLAR_RATED_W)
+        _solar.start()
 
     if config.P1_HOST:
         _p1 = p1.Meter(config.P1_HOST, solar_fn=_solar_watts)

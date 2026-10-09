@@ -142,9 +142,9 @@
     </button>
     <div class="tabs">
       <span class="tab" id="tab-network" onclick="showTab('network')">Network</span>
-      <span class="tab"        id="tab-printer" onclick="showTab('printer')">3D Printer</span>
       <span class="tab"        id="tab-garage"  onclick="showTab('garage')">Garage</span>
       <span class="tab active" id="tab-power"   onclick="showTab('power')">Power</span>
+      <span class="tab"        id="tab-solar"   onclick="showTab('solar')">Solar</span>
       <span class="tab"        id="tab-waste"   onclick="showTab('waste')">Waste</span>
       <span class="tab"        id="tab-system"  onclick="showTab('system')">System</span>
     </div>
@@ -226,57 +226,6 @@
 
   </div><!-- #page-network -->
 
-  <div class="tab-page" id="page-printer" style="display:none">
-
-    <div class="pr-layout" id="pr-layout">
-
-      <div class="pr-main">
-        <div class="ring big">
-          <svg viewBox="0 0 200 200">
-            <circle class="ring-bg" cx="100" cy="100" r="82"/>
-            <circle class="ring-fg" cx="100" cy="100" r="82"/>
-          </svg>
-          <div class="ring-text">
-            <span class="ring-value">–</span>
-            <span class="ring-unit">%</span>
-          </div>
-        </div>
-        <div class="pr-state">–</div>
-        <div class="pr-file">&nbsp;</div>
-      </div>
-
-      <div class="pr-side">
-        <div class="pr-tiles">
-          <div class="tile" id="p-nozzle">
-            <span class="tile-label">Nozzle</span>
-            <span class="tile-value">–</span>
-          </div>
-          <div class="tile" id="p-bed">
-            <span class="tile-label">Bed</span>
-            <span class="tile-value">–</span>
-          </div>
-          <div class="tile" id="p-remaining">
-            <span class="tile-label">Time remaining</span>
-            <span class="tile-value">–</span>
-          </div>
-          <div class="tile" id="p-layer">
-            <span class="tile-label">Layer</span>
-            <span class="tile-value">–</span>
-          </div>
-        </div>
-
-        <div class="pr-filament">
-          <span class="tile-label">Filament</span>
-          <div class="trays" id="p-trays"></div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="pr-msg" id="pr-msg" style="display:none"></div>
-
-  </div><!-- #page-printer -->
-
   <div class="tab-page" id="page-garage" style="display:none">
 
     <div class="gr-now" id="gr-now">
@@ -340,6 +289,48 @@
     </div>
     <div class="pr-msg" id="pw-msg" style="display:none"></div>
   </div><!-- #page-power -->
+
+  <div class="tab-page" id="page-solar" style="display:none">
+    <div class="sl-wrap" id="sl-wrap">
+
+      <div class="sl-now" id="sl-now">
+        <div class="sl-now-main">
+          <span class="tile-label" id="sl-status">Solar panels</span>
+          <span class="sl-value"><span id="sl-w">–</span><small id="sl-unit">W</small></span>
+          <div class="sl-bar"><i id="sl-fill"></i></div>
+          <span class="sl-sub" id="sl-rated">&nbsp;</span>
+        </div>
+        <div class="sl-today">
+          <div class="sl-big"><span class="tile-label">Today</span><span class="sl-num" id="sl-today">–</span></div>
+          <div class="sl-big"><span class="tile-label">Peak today</span><span class="sl-num" id="sl-peak">–</span></div>
+          <div class="sl-big"><span class="tile-label">Lifetime</span><span class="sl-num" id="sl-life">–</span></div>
+        </div>
+      </div>
+
+      <div class="sl-events" id="sl-events" style="display:none"></div>
+
+      <div class="sl-cols">
+        <div class="sl-card">
+          <div class="sl-head">Inverter</div>
+          <div class="sl-rows" id="sl-inverter"></div>
+          <div class="sl-foot" id="sl-model"></div>
+        </div>
+        <div class="sl-card">
+          <div class="sl-head">Last 7 days</div>
+          <div class="sl-rows" id="sl-days"></div>
+          <div class="sl-foot" id="sl-days-note"></div>
+        </div>
+      </div>
+
+      <div class="sl-graph">
+        <div class="pw-graph-head"><span>Last 24 hours</span><span class="count" id="sl-graph-note"></span></div>
+        <svg id="sl-svg" viewBox="0 0 1200 120" preserveAspectRatio="none"></svg>
+        <div class="pw-axis" id="sl-axis"></div>
+      </div>
+
+    </div>
+    <div class="pr-msg" id="sl-msg" style="display:none"></div>
+  </div><!-- #page-solar -->
 
   <div class="tab-page" id="page-waste" style="display:none">
     <div class="wa-wrap">
@@ -429,12 +420,12 @@
 
   function showTab(tab) {
     currentTab = tab;
-    for (const t of ['system', 'network', 'printer', 'garage', 'power', 'waste']) {
+    for (const t of ['system', 'network', 'garage', 'power', 'solar', 'waste']) {
       document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     }
-    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage, power: refreshPower, waste: refreshWaste }[tab];
-    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000, power: 2000, waste: 60000 }[tab];
+    const refresh = { system: refreshSystem, network: refreshNetwork, garage: refreshGarage, power: refreshPower, solar: refreshSolar, waste: refreshWaste }[tab];
+    const every   = { system: 2000, network: 4000, garage: 3000, power: 2000, solar: 3000, waste: 60000 }[tab];
     clearInterval(sysTimer);
     refresh();
     sysTimer = setInterval(refresh, every);
@@ -880,6 +871,117 @@
     } catch (e) { /* keep the previous graph */ }
   }
 
+  // ── Solar tab: the inverter itself (Modbus, read-only) ──────
+  let slHistoryAt = 0;
+  const fmtKw = w => w == null ? '–' : (Math.abs(w) >= 1000 ? (w / 1000).toFixed(2) + ' kW' : Math.round(w) + ' W');
+  const fmtWh = wh => wh == null ? '–' : (wh >= 1e6 ? (wh / 1e6).toFixed(2) + ' MWh' : (wh / 1000).toFixed(wh >= 1e5 ? 0 : 2) + ' kWh');
+  const num = (v, digits, unit) => v == null ? '–' : v.toFixed(digits) + (unit ? ' ' + unit : '');
+
+  function showSolarMessage(text) {
+    document.getElementById('sl-wrap').style.display = 'none';
+    const m = document.getElementById('sl-msg');
+    m.textContent = text;
+    m.style.display = 'flex';
+  }
+  function kvRow(label, value, cls) {
+    const row = document.createElement('div');
+    row.className = 'sl-row' + (cls ? ' ' + cls : '');
+    const k = document.createElement('span'); k.textContent = label;
+    const v = document.createElement('b'); v.textContent = value;
+    row.append(k, v);
+    return row;
+  }
+
+  async function refreshSolar() {
+    try {
+      const d = await (await fetch('/api/solar', { cache: 'no-store' })).json();
+      if (!d.configured) { showSolarMessage('Solar inverter not configured — set SOLAR_HOST in config.py'); return; }
+      if (d.power === undefined && !d.status) {
+        showSolarMessage(d.error ? 'Inverter: ' + d.error : 'Waiting for the inverter…'); return;
+      }
+      document.getElementById('sl-msg').style.display = 'none';
+      document.getElementById('sl-wrap').style.display = 'flex';
+
+      const asleep = [1, 2, 3, 6, 8].includes(d.status_code), producing = d.status_code === 4 || d.status_code === 5;
+      const now = document.getElementById('sl-now');
+      now.className = 'sl-now ' + (!d.ok ? 'stale' : d.status_code === 7 ? 'fault' : producing ? 'on' : 'off');
+      document.getElementById('sl-status').textContent =
+        !d.ok ? 'Inverter not responding' + (d.age ? ' · last data ' + fmtDuration(d.age) + ' ago' : '')
+              : (d.status || 'Solar panels');
+      const w = d.power == null ? (asleep ? 0 : null) : Math.max(0, d.power);
+      document.getElementById('sl-w').textContent = w == null ? '–' : (w >= 1000 ? (w / 1000).toFixed(2) : Math.round(w));
+      document.getElementById('sl-unit').textContent = w != null && w >= 1000 ? 'kW' : 'W';
+      document.getElementById('sl-fill').style.width = (w == null || !d.rated ? 0 : Math.min(100, 100 * w / d.rated)) + '%';
+      document.getElementById('sl-rated').textContent = d.rated
+        ? (w != null && w > 0 ? Math.round(100 * w / d.rated) + '% of ' : 'rated ') + fmtKw(d.rated) : ' ';
+
+      document.getElementById('sl-today').textContent = d.today ? fmtWh(d.today.wh) : '–';
+      document.getElementById('sl-peak').textContent = d.peak ? fmtKw(d.peak.w) : '–';
+      document.getElementById('sl-life').textContent = fmtWh(d.lifetime_wh);
+
+      // active faults, only when there are any
+      const ev = document.getElementById('sl-events');
+      ev.style.display = d.events && d.events.length ? 'block' : 'none';
+      ev.textContent = d.events && d.events.length ? '⚠ ' + d.events.join(' · ') : '';
+
+      const ac = d.ac || {}, dc = d.dc || {}, t = d.temps || {};
+      const box = document.getElementById('sl-inverter');
+      box.replaceChildren(
+        kvRow('AC voltage', (ac.phases || []).length ? ac.phases.map(p => num(p.v, 1)).join(' / ') + ' V' : '–'),
+        kvRow('AC current', num(ac.current, 2, 'A')),
+        kvRow('Grid frequency', num(ac.frequency, 2, 'Hz')),
+        kvRow('DC voltage', num(dc.voltage, 0, 'V')),
+        kvRow('DC current', num(dc.current, 2, 'A')),
+        kvRow('DC power', fmtKw(dc.power)),
+        kvRow('Efficiency', d.efficiency == null ? '–' : d.efficiency + ' %'),
+        kvRow('Heatsink', num(t.sink, 1, '°C')),
+      );
+      const info = d.info || {};
+      document.getElementById('sl-model').textContent =
+        [info.manufacturer, info.model, info.version && 'fw ' + info.version].filter(Boolean).join(' · ');
+
+      // the last 7 finished days (the inverter only reports a lifetime total: the display keeps the days)
+      const days = document.getElementById('sl-days');
+      days.replaceChildren();
+      const names = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
+      for (const x of d.days || []) {
+        const dt = new Date(x.date + 'T00:00:00');
+        days.append(kvRow(`${names[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1}`, fmtWh(x.wh) + (x.partial ? ' *' : '')));
+      }
+      if (!(d.days || []).length) days.append(kvRow('No finished days yet', '–'));
+      document.getElementById('sl-days-note').textContent =
+        (d.days || []).some(x => x.partial) ? '* started mid-day: counted from when the display began recording' : '';
+
+      if (Date.now() - slHistoryAt > 30000) { slHistoryAt = Date.now(); drawSolarGraph(); }
+    } catch (e) { /* keep last values; try again on next tick */ }
+  }
+
+  async function drawSolarGraph() {
+    try {
+      const h = await (await fetch('/api/solar/history', { cache: 'no-store' })).json();
+      const svg = document.getElementById('sl-svg'), axis = document.getElementById('sl-axis');
+      const W = 1200, H = 120, end = h.now, start = end - 86400;
+      const pts = h.points.filter(p => p[0] >= start);
+      svg.replaceChildren(); axis.replaceChildren();
+      const ns = 'http://www.w3.org/2000/svg';
+      const mk = (tag, attrs) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+      const peak = Math.max(500, ...pts.map(p => p[1]));
+      document.getElementById('sl-graph-note').textContent = pts.length ? 'peak ' + fmtKw(peak) : 'collecting data…';
+      svg.append(mk('line', { x1: 0, x2: W, y1: H - 1, y2: H - 1, stroke: themeColor('--line-strong'), 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
+      const bw = Math.max(1.2, W / 2880);
+      for (const [t, v] of pts) {
+        const hgt = (v / peak) * (H - 8);
+        if (hgt < 0.5) continue;
+        svg.append(mk('rect', { x: (t - start) / 86400 * W, y: H - 1 - hgt, width: bw, height: hgt, fill: themeColor('--amber') }));
+      }
+      for (let i = 0; i <= 4; i++) {
+        const tt = new Date((start + i * 21600) * 1000), s = document.createElement('span');
+        s.textContent = String(tt.getHours()).padStart(2, '0') + ':00';
+        axis.append(s);
+      }
+    } catch (e) { /* keep the previous graph */ }
+  }
+
   // ── Waste collection (Blink, via the Ximmio calendar) ───────
   const WASTE_DAYS_NL = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
   const WASTE_MONTHS_NL = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
@@ -957,86 +1059,6 @@
   }
   refreshWaste();
   setInterval(refreshWaste, 30 * 60 * 1000);                  // the server caches for 6 h; this just re-reads it
-
-  // ── Printer tab ────────────────────────────────────────────
-  const PRINT_STATES = {
-    RUNNING: ['Printing', 'running'], PREPARE: ['Preparing', 'running'], SLICING: ['Preparing', 'running'],
-    PAUSE: ['Paused', 'paused'], FINISH: ['Finished', 'done'], FAILED: ['Failed', 'failed'], IDLE: ['Idle', 'idle'],
-  };
-  const fmtTemp = (v, target) =>
-    v == null ? '–' : Math.round(v) + '°' + (target > 0 ? ` / ${Math.round(target)}°` : '');
-
-  function showPrinterMessage(text) {
-    document.getElementById('pr-layout').style.display = 'none';
-    const m = document.getElementById('pr-msg');
-    m.textContent = text;
-    m.style.display = 'flex';
-  }
-
-  async function refreshPrinter() {
-    try {
-      const r = await fetch('/api/printer', { cache: 'no-store' });
-      const d = await r.json();
-
-      if (!d.configured) {
-        showPrinterMessage('Printer not configured — set BAMBU_SERIAL and BAMBU_ACCESS_CODE in config_local.py');
-        return;
-      }
-      if (!d.connected || !d.has_data) {
-        showPrinterMessage(d.error ? `Printer: ${d.error}` : (d.connected ? 'Waiting for printer data…' : 'Printer offline'));
-        return;
-      }
-      document.getElementById('pr-msg').style.display = 'none';
-      document.getElementById('pr-layout').style.display = 'flex';
-
-      const [label, cls] = PRINT_STATES[d.state] || [d.state ? d.state.toLowerCase() : '–', 'idle'];
-      const layout = document.getElementById('pr-layout');
-      layout.className = 'pr-layout ' + cls;
-
-      const pct = d.percent == null ? 0 : Math.max(0, Math.min(100, d.percent));
-      const fg = layout.querySelector('.ring-fg');
-      fg.style.strokeDasharray  = CIRC;
-      fg.style.strokeDashoffset = CIRC * (1 - pct / 100);
-      layout.querySelector('.ring-value').textContent = d.percent == null ? '–' : d.percent;
-      layout.querySelector('.pr-state').textContent = label;
-      layout.querySelector('.pr-file').textContent  = d.file || ' ';
-
-      const active = cls === 'running' || cls === 'paused';
-      setTile('p-nozzle', fmtTemp(d.nozzle, d.nozzle_target));
-      setTile('p-bed', fmtTemp(d.bed, d.bed_target));
-      let rem = '–';
-      if (active && d.remaining_min != null) {
-        const done = new Date(Date.now() + d.remaining_min * 60000);
-        rem = fmtDuration(d.remaining_min * 60).replace(/^0m$/, '<1m') +
-              ` · ${String(done.getHours()).padStart(2, '0')}:${String(done.getMinutes()).padStart(2, '0')}`;
-      }
-      setTile('p-remaining', rem);
-      setTile('p-layer', d.layer != null && d.total_layers ? `${d.layer} / ${d.total_layers}` : '–');
-
-      const box = document.getElementById('p-trays');
-      box.replaceChildren();
-      if (!d.filament.length) {
-        const none = document.createElement('span');
-        none.className = 'tray-none';
-        none.textContent = 'No AMS detected';
-        box.append(none);
-      }
-      for (const t of d.filament) {
-        const el = document.createElement('div');
-        el.className = 'tray' + (t.active ? ' active' : '');
-        const sw = document.createElement('i');
-        sw.className = 'swatch';
-        if (t.color) sw.style.background = '#' + t.color;
-        const ty = document.createElement('span'); ty.className = 'tray-type';
-        ty.textContent = t.type || 'empty';
-        const rm = document.createElement('span'); rm.className = 'tray-remain';
-        rm.textContent = t.remain != null && t.remain >= 0 && t.type ? t.remain + '%' : '';
-        el.append(sw, ty, rm);
-        box.append(el);
-      }
-    } catch (e) { /* keep last values; try again on next tick */ }
-  }
-  function setTile(id, v) { document.querySelector('#' + id + ' .tile-value').textContent = v; }
 
   // ── Rain outlook on the Home page (same Buienradar data as the Radar tab) ──
   async function refreshRainNow() {

@@ -27,7 +27,7 @@ BUCKET_SECONDS = 30            # one history point per 30 s (mean of the reading
 KEEP_SECONDS = 24 * 3600
 SAVE_SECONDS = 300
 STALE_SECONDS = 15             # no successful reading for this long = meter offline
-SOLAR_SECONDS = 20             # how often the solar callback is asked
+SOLAR_SECONDS = 5              # how often the solar callback is asked (the local inverter updates every 5 s)
 SOLAR_MAX_AGE = 3600           # a solar value older than this (s) is too old to use
 SOLAR_STALE_AFTER = 180        # older than this (s) is shown as 'last known'
 PARTIAL_AFTER = 600            # baseline taken >10 min after midnight = "today" is partial

@@ -19,7 +19,13 @@ GARAGE_TOPIC = "home/garagedoor/state"     # payloads: OPEN / CLOSED
 P1_HOST = "192.168.1.116"
 P1_GAUGE_W = 5000          # power gauge runs from -this (export) to +this (import), in watts
 
-# --- Home Assistant (only used to read the current solar production) ---
+# --- Solar inverter (SolarEdge, Modbus TCP on the local network, read-only) ---
+SOLAR_HOST = "192.168.1.123"
+SOLAR_PORT = 1502
+SOLAR_UNIT = 1
+SOLAR_RATED_W = 5000       # inverter size, for the power bar (this one does not report it; SE5000H = 5 kW)
+
+# --- Home Assistant (fallback for the solar figure when the inverter does not answer) ---
 # The access token goes in config_local.py (git-ignored), not here.
 HA_URL = "http://192.168.1.146:8123"
 HA_TOKEN = ""
@@ -34,13 +40,6 @@ WASTE_HOUSENUMBER = "27"
 # Zoom of Buienradar's map widget: 6 = whole region, 8 = ~200 km wide,
 # 11 = ~100 km, 13 = local. (These are the widget's own zoom codes.)
 RADAR_ZOOM = 7
-
-# --- 3D printer (Bambu Lab, LAN) ---
-# Put BAMBU_SERIAL and BAMBU_ACCESS_CODE in config_local.py (git-ignored),
-# not here: the access code is a credential and this repo is on GitHub.
-BAMBU_HOST = "192.168.1.47"
-BAMBU_SERIAL = ""
-BAMBU_ACCESS_CODE = ""
 
 # --- Network page ---
 # Devices to monitor. Without "port" the host is pinged; with "port" a TCP

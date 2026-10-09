@@ -27,7 +27,7 @@ for tool in unclutter xset curl; do
     command -v "$tool" >/dev/null || echo "Warning: '$tool' not found (sudo apt install unclutter x11-xserver-utils curl)" >&2
 done
 python3 -c "import flask" 2>/dev/null || echo "Warning: Flask missing (sudo apt install python3-flask)" >&2
-python3 -c "import paho.mqtt" 2>/dev/null || echo "Warning: paho-mqtt missing, printer page disabled (sudo apt install python3-paho-mqtt)" >&2
+python3 -c "import paho.mqtt" 2>/dev/null || echo "Warning: paho-mqtt missing, garage page disabled (sudo apt install python3-paho-mqtt)" >&2
 
 # --- Server service ---------------------------------------------------------
 sed -e "s|__USER__|$APP_USER|g" -e "s|__DIR__|$APP_DIR|g" \

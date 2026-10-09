@@ -626,108 +626,7 @@ body {
   color: var(--text-3);
 }
 
-/* ── Printer page ───────────────────────────────────── */
-.pr-layout {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 20px;
-  padding: 24px 40px;
-}
-
-.pr-main {
-  width: 440px;
-  flex-shrink: 0;
-  background: var(--card);
-  border-radius: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-
-.ring.big { width: 300px; height: 300px; }
-.ring.big .ring-text { padding-top: 98px; }
-.ring.big .ring-value { font-size: 92px; }
-.ring.big .ring-unit  { font-size: 38px; }
-.ring.big circle { stroke-width: 10; }
-
-.pr-state { font-size: 38px; font-weight: 700; color: var(--text); }
-.pr-file {
-  max-width: 380px;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* state colouring: running keeps the default accent */
-.pr-layout.idle    .ring-fg { stroke: var(--idle); }
-.pr-layout.paused  .ring-fg { stroke: var(--amber-text); }
-.pr-layout.done    .ring-fg { stroke: var(--green); }
-.pr-layout.failed  .ring-fg { stroke: var(--red); }
-.pr-layout.paused  .pr-state { color: var(--amber-text); }
-.pr-layout.done    .pr-state { color: var(--green); }
-.pr-layout.failed  .pr-state { color: var(--red); }
-
-.pr-side {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.pr-tiles {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 14px;
-}
-.pr-tiles .tile-value { font-size: 36px; }
-
-.pr-filament {
-  height: 200px;
-  flex-shrink: 0;
-  background: var(--card);
-  border-radius: 20px;
-  padding: 18px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.trays { flex: 1; display: flex; gap: 14px; align-items: center; }
-
-.tray {
-  flex: 1;
-  height: 100%;
-  border-radius: 14px;
-  border: 2px solid transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.tray.active { border-color: var(--accent); }
-
-.swatch {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--track);
-  box-shadow: inset 0 0 0 2px var(--swatch-edge);
-}
-
-.tray-type   { font-size: 18px; font-weight: 700; color: var(--text); }
-.tray-remain { font-size: 15px; font-weight: 600; color: var(--text-2); min-height: 18px; }
-.tray-none   { font-size: 18px; color: var(--text-3); margin: 0 auto; }
-
+/* ── Message shown in place of a page's content (Garage, Power) ── */
 .pr-msg {
   flex: 1;
   align-items: center;
@@ -1132,6 +1031,40 @@ body {
 .wa-row.urgent .wa-days { color: var(--amber-text); }
 .wa-later { font-size: 17px; font-weight: 600; color: var(--text-3); text-align: right; white-space: nowrap; }
 .wa-note  { margin-top: auto; padding-top: 10px; font-size: 14px; color: var(--text-3); }
+
+/* ── Solar page: the inverter ───────────────────────── */
+.sl-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 40px 14px; }
+
+.sl-now { display: flex; gap: 20px; align-items: stretch; background: var(--card); border-radius: 18px; padding: 18px 26px; }
+.sl-now-main { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sl-value { font-size: 76px; font-weight: 700; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+.sl-value small { font-size: 28px; font-weight: 600; color: var(--text-2); margin-left: 8px; }
+.sl-now.on .sl-value { color: var(--amber-text); }
+.sl-now.off .sl-value, .sl-now.stale .sl-value { color: var(--text-2); }
+.sl-now.fault .sl-value { color: var(--red); }
+.sl-bar { height: 14px; border-radius: 7px; background: var(--track); overflow: hidden; }
+.sl-bar i { display: block; height: 100%; width: 0; border-radius: 7px; background: var(--amber); transition: width 0.8s ease; }
+.sl-sub { font-size: 15px; font-weight: 600; color: var(--text-2); }
+
+.sl-today { display: grid; grid-template-columns: repeat(3, 150px); gap: 12px; align-items: center; }
+.sl-big { display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 12px 6px; background: var(--card-2); border-radius: 14px; }
+.sl-big .tile-label { font-size: 15px; }
+.sl-num { font-size: 26px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.sl-events { background: var(--amber-bg); color: var(--red); border-radius: 12px; padding: 10px 18px; font-size: 18px; font-weight: 700; }
+
+.sl-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sl-card { background: var(--card); border-radius: 18px; padding: 14px 22px 12px; display: flex; flex-direction: column; gap: 6px; }
+.sl-head { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-2); }
+.sl-rows { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+.sl-card:nth-child(2) .sl-rows { grid-template-columns: 1fr; }
+.sl-row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--line-soft); font-size: 17px; font-variant-numeric: tabular-nums; }
+.sl-row span { color: var(--text-2); font-weight: 600; }
+.sl-row b { color: var(--text); font-weight: 700; white-space: nowrap; }
+.sl-foot { font-size: 13px; color: var(--text-3); min-height: 16px; }
+
+.sl-graph { flex: 1; min-height: 0; background: var(--card); border-radius: 18px; padding: 10px 20px 6px; display: flex; flex-direction: column; }
+.sl-graph svg { flex: 1; min-height: 0; width: 100%; }
 
 /* ── Light theme (the warm palette this display started with) ──
    Switched by <html data-theme="light">; dark is the default. */
