@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>try { var t = localStorage.getItem("theme"); if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -27,6 +28,10 @@
     </div>
     <div class="top-bar-right">
       <div class="location">{{ cfg.LOCATION_NAME }}</div>
+      <button class="theme-btn" onclick="toggleTheme()" aria-label="Switch theme">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6"/><path d="M11 1h2v3.4h-2zM11 19.6h2V23h-2zM1 11h3.4v2H1zM19.6 11H23v2h-3.4zM4.2 5.6l1.4-1.4 2.4 2.4-1.4 1.4zM16 17.4l1.4-1.4 2.4 2.4-1.4 1.4zM4.2 18.4 6.6 16l1.4 1.4-2.4 2.4zM16 6.6l2.4-2.4 1.4 1.4-2.4 2.4z"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.9 8.9 0 1 0 11.1 11.1z"/></svg>
+      </button>
     </div>
   </div>
 
@@ -144,6 +149,10 @@
       <span class="tab"        id="tab-system"  onclick="showTab('system')">System</span>
     </div>
     <span class="sclock" id="system-clock"></span>
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="Switch theme">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6"/><path d="M11 1h2v3.4h-2zM11 19.6h2V23h-2zM1 11h3.4v2H1zM19.6 11H23v2h-3.4zM4.2 5.6l1.4-1.4 2.4 2.4-1.4 1.4zM16 17.4l1.4-1.4 2.4 2.4-1.4 1.4zM4.2 18.4 6.6 16l1.4 1.4-2.4 2.4zM16 6.6l2.4-2.4 1.4 1.4-2.4 2.4z"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.9 8.9 0 1 0 11.1 11.1z"/></svg>
+    </button>
   </div>
 
   <div class="tab-page" id="page-system">
@@ -369,6 +378,17 @@
   }
   tick();
   setInterval(tick, 1000);
+
+  // ── Theme (dark default, light on request; remembered in the browser) ──
+  const themeColor = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function toggleTheme() {
+    const light = document.documentElement.getAttribute('data-theme') !== 'light';
+    if (light) document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+    try { localStorage.setItem('theme', light ? 'light' : 'dark'); } catch (e) {}
+    pwHistoryAt = 0;                                       // redraw the Power graph with the new colours
+    if (typeof refreshPower === 'function') drawPowerGraph();
+  }
 
   // ── System status page ─────────────────────────────────────
   const CIRC = 2 * Math.PI * 82;          // ring circumference (r = 82)
@@ -836,7 +856,7 @@
 
       const maxAbs = Math.max(1000, ...pts.map(p => Math.abs(p[1])));
       const sy = v => H / 2 - (v / maxAbs) * (H / 2 - 6), sx = t => (t - start) / 86400 * W;
-      svg.append(mk('line', { x1: 0, x2: W, y1: H / 2, y2: H / 2, stroke: '#3A3F45', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
+      svg.append(mk('line', { x1: 0, x2: W, y1: H / 2, y2: H / 2, stroke: themeColor('--line-strong'), 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
       document.getElementById('pw-graph-note').textContent =
         pts.length ? `peak ±${fmtW(maxAbs)} ${unitW(maxAbs)} · import up, export down` : 'collecting data…';
 
@@ -845,7 +865,7 @@
       for (const [t, v] of pts) {
         const y = sy(v), top = Math.min(y, H / 2), hgt = Math.abs(y - H / 2);
         if (hgt < 0.5) continue;
-        svg.append(mk('rect', { x: sx(t), y: top, width: bw, height: hgt, fill: v < 0 ? '#58B070' : '#E0A040' }));
+        svg.append(mk('rect', { x: sx(t), y: top, width: bw, height: hgt, fill: v < 0 ? themeColor('--green') : themeColor('--amber') }));
       }
       for (let i = 0; i <= 4; i++) {                       // axis labels every 6 hours
         const tt = new Date((start + i * 21600) * 1000), span = document.createElement('span');

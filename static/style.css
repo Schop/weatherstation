@@ -1132,3 +1132,63 @@ body {
 .wa-row.urgent .wa-days { color: var(--amber-text); }
 .wa-later { font-size: 17px; font-weight: 600; color: var(--text-3); text-align: right; white-space: nowrap; }
 .wa-note  { margin-top: auto; padding-top: 10px; font-size: 14px; color: var(--text-3); }
+
+/* ── Light theme (the warm palette this display started with) ──
+   Switched by <html data-theme="light">; dark is the default. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --accent: #B35A0C;
+  --amber: #A87310;
+  --amber-bg: #F1DEBB;
+  --amber-text: #7A520A;
+  --bg: #F8F5F0;
+  --blue: #2C68AA;
+  --blue-soft: #A9C6EA;
+  --card: #EEEAE2;
+  --card-2: #E4DDD2;
+  --green: #3E7D4E;
+  --green-bg: #D6E6D9;
+  --green-glow: rgba(94, 158, 110, 0.22);
+  --green-text: #336B42;
+  --hi: #B8432A;
+  --idle: #C9C0B3;
+  --line: #E0D8CE;
+  --line-soft: #E8E1D6;
+  --line-strong: #D2C9BC;
+  --lo: #2F6BB0;
+  --moon: #6B6BA0;
+  --overlay: rgba(248, 245, 240, 0.90);
+  --red: #A63D32;
+  --red-glow: rgba(184, 92, 80, 0.22);
+  --shadow: rgba(60, 45, 30, 0.15);
+  --swatch-edge: rgba(0, 0, 0, 0.10);
+  --text: #262320;
+  --text-2: #756758;
+  --text-3: #7D6F5F;
+  --text-icon: #6B6258;
+  --track: #DDD5CA;
+}
+/* the radar map is only toned down on the dark theme */
+:root[data-theme="light"] .rd-map iframe { filter: none; }
+/* text on the accent-coloured buttons stays dark in both themes; on light the accent is darker, so use white */
+:root[data-theme="light"] .speed-btn { color: #FFFFFF; }
+
+/* ── Theme toggle button ──────────────────────────────── */
+.theme-btn {
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.theme-btn svg { width: 28px; height: 28px; fill: var(--text-2); }
+.theme-btn:active { background: var(--line-strong); }
+/* show the moon while the theme is light (tap = go dark), the sun while it is dark (tap = go light) */
+.theme-btn .i-moon { display: none; }
+:root[data-theme="light"] .theme-btn .i-sun  { display: none; }
+:root[data-theme="light"] .theme-btn .i-moon { display: block; }
