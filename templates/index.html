@@ -512,9 +512,14 @@
       const d = await r.json();
 
       const net = d.internet;
-      setLink(document.getElementById('n-internet'), net.up,
-              net.up ? 'Online' : 'Offline',
-              net.up ? `${Math.round(net.ms)} ms · ${net.host}` : `no reply from ${net.host}`);
+      // detail line: the public IP (what the internet sees), plus when it last changed; the ping time otherwise
+      const pub = d.public_ip || {};
+      let detail = net.up ? `${Math.round(net.ms)} ms` : 'no reply from the internet';
+      if (pub.ip) {
+        detail = `${pub.ip}` + (pub.stale ? ' (last known)' : '');
+        if (pub.previous && pub.since && d.now - pub.since < 7 * 86400) detail += ` · changed ${fmtAgo(d.now - pub.since)}`;
+      }
+      setLink(document.getElementById('n-internet'), net.up, net.up ? 'Online' : 'Offline', detail);
 
       const gw = d.gateway, gcard = document.getElementById('n-gateway');
       if (gw) setLink(gcard, gw.up, gw.ip, gw.up ? `${Math.round(gw.ms)} ms · ${gw.iface}` : 'no reply');

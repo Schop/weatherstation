@@ -13,6 +13,7 @@ import config
 import garage
 import homeassistant
 import p1
+import publicip
 import speedtest
 import waste
 import lanscan
@@ -34,6 +35,7 @@ _printer = None       # bambu.Printer | None (started in __main__ if configured)
 _garage = None        # garage.GarageDoor | None (started in __main__ if configured)
 _p1 = None            # p1.Meter | None (started in __main__ if configured)
 _speedtest = speedtest.SpeedTest()
+_publicip = publicip.PublicIP()
 _scanner = None       # lanscan.Scanner | None (started in __main__ if enabled)
 
 
@@ -147,6 +149,7 @@ def network():
         gw = (data.get("gateway") or {}).get("ip")
         data["lan"] = _scanner.snapshot(exclude={d["host"] for d in config.NETWORK_DEVICES},
                                         gateway=gw)
+    data["public_ip"] = _publicip.snapshot()
     data["now"] = time.time()
     resp = jsonify(data)
     resp.headers["Cache-Control"] = "no-store"
@@ -259,6 +262,8 @@ if __name__ == "__main__":
     if config.P1_HOST:
         _p1 = p1.Meter(config.P1_HOST, solar_fn=_solar_watts)
         _p1.start()
+
+    _publicip.start()
 
     if config.NETWORK_SCAN:
         _scanner = lanscan.Scanner(config.NETWORK_SUBNET, config.NETWORK_LABELS)
