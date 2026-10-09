@@ -78,7 +78,8 @@ class GarageDoor:
             client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=cid)
         except AttributeError:               # paho 1.x
             client = mqtt.Client(client_id=cid)
-        client.username_pw_set(self.user, self.password)
+        if self.user:                       # an open broker (no login) is fine too
+            client.username_pw_set(self.user, self.password)
         client.reconnect_delay_set(min_delay=2, max_delay=30)
         client.on_connect = self._on_connect
         client.on_disconnect = self._on_disconnect

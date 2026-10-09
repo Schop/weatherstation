@@ -8,7 +8,8 @@ REFRESH_INTERVAL = 600  # seconds between API calls
 FPS = 10
 
 # --- Garage door (MQTT, read-only) ---
-# The broker login goes in config_local.py (git-ignored), not here.
+# The broker login (if the broker needs one) goes in config_local.py (git-ignored), not here.
+# Leave GARAGE_MQTT_USER empty for a broker that allows anonymous connections.
 GARAGE_MQTT_HOST = "192.168.1.146"
 GARAGE_MQTT_PORT = 1883
 GARAGE_MQTT_USER = ""

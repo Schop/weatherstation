@@ -256,7 +256,7 @@ if __name__ == "__main__":
                          daemon=True, name="fetch")
     t.start()
 
-    if config.GARAGE_MQTT_USER and config.GARAGE_TOPIC:
+    if config.GARAGE_MQTT_HOST and config.GARAGE_TOPIC:
         _garage = garage.GarageDoor(config.GARAGE_MQTT_HOST, config.GARAGE_MQTT_PORT,
                                     config.GARAGE_MQTT_USER, config.GARAGE_MQTT_PASSWORD,
                                     config.GARAGE_TOPIC)
