@@ -6,7 +6,6 @@ LOCATION_NAME = "Someren"
 # --- Behaviour ---
 REFRESH_INTERVAL = 600  # seconds between API calls
 FPS = 10
-WIND_WARN_KMH = 30  # wind tile turns red above this speed
 
 # --- Garage door (MQTT, read-only) ---
 # The broker login goes in config_local.py (git-ignored), not here.
@@ -25,6 +24,11 @@ P1_GAUGE_W = 5000          # power gauge runs from -this (export) to +this (impo
 HA_URL = "http://192.168.1.146:8123"
 HA_TOKEN = ""
 HA_SOLAR_POWER = "sensor.solaredge_current_power"
+
+# --- Waste collection (Ximmio API, used by Blink) ---
+WASTE_COMPANY_CODE = "252d30d0-2e74-469c-8f1e-c0e2e434eb58"
+WASTE_POSTCODE = "5712XT"
+WASTE_HOUSENUMBER = "27"
 
 # --- Rain radar ---
 # Zoom of Buienradar's map widget: 6 = whole region, 8 = ~200 km wide,

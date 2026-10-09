@@ -195,16 +195,6 @@ body {
 
 .feels { font-size: 28px; margin-top: 6px; }
 
-/* ── Stats grid (2 x 2 tiles) ───────────────────────── */
-.stats-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 14px;
-  height: 270px;
-}
-
 .tile {
   background: var(--card);
   border-radius: 16px;
@@ -236,11 +226,6 @@ body {
   font-weight: 600;
   color: var(--text-2);
 }
-
-.tile.sunrise .tile-value { color: var(--amber); }
-.tile.sunset  .tile-value { color: var(--moon); }
-.tile.warn    .tile-value,
-.tile.warn    .tile-value small { color: var(--red); }
 
 /* ── Forecast strips ────────────────────────────────── */
 .strip {
@@ -1097,3 +1082,50 @@ body {
 .sh-up   { font-size: 22px; font-weight: 700; color: var(--accent); }
 .sh-ping { font-size: 18px; font-weight: 600; color: var(--text-2); }
 .sh-empty { padding: 60px 0; text-align: center; font-size: 18px; color: var(--text-3); }
+
+/* ── Waste collection ───────────────────────────────── */
+.bin { display: inline-block; width: 18px; height: 22px; border-radius: 4px 4px 6px 6px; background: var(--idle); flex-shrink: 0; position: relative; }
+.bin::before { content: ""; position: absolute; left: -2px; right: -2px; top: -5px; height: 5px; border-radius: 3px; background: inherit; filter: brightness(0.82); }
+.bin.grey   { background: #8A8F96; }
+.bin.green  { background: #58B070; }
+.bin.blue   { background: #5A9CE0; }
+.bin.orange { background: #E0A040; }
+.bin.brown  { background: #A07850; }
+.bin.muted  { background: var(--idle); }
+
+/* Home page: waste panel in the space right of the weather */
+.waste-panel {
+  flex: 1;
+  min-width: 0;
+  height: 300px;
+  background: var(--card);
+  border-radius: 20px;
+  padding: 16px 22px 14px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.wp-head { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-2); }
+.wp-list { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; }
+.wt-row { flex: 1; display: flex; align-items: center; gap: 16px; padding: 0 12px; border-radius: 12px; min-height: 0; }
+.wt-row.urgent { background: var(--amber-bg); }
+.wt-text { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.15; }
+.wt-name { font-size: 22px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wt-when { font-size: 19px; font-weight: 600; color: var(--text-2); }
+.wt-row.urgent .wt-when { color: var(--amber-text); }
+.wt-date { font-size: 18px; font-weight: 600; color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.wt-row .bin { width: 20px; height: 26px; }
+
+/* Waste tab */
+.wa-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 22px 40px 12px; }
+.wa-list { display: flex; flex-direction: column; gap: 10px; }
+.wa-row { height: 76px; background: var(--card); border-radius: 16px; padding: 0 24px; display: grid;
+          grid-template-columns: 28px 330px 1fr 150px 260px; align-items: center; gap: 16px; }
+.wa-row.urgent { background: var(--amber-bg); }
+.wa-row .bin { width: 22px; height: 28px; }
+.wa-name  { font-size: 26px; font-weight: 700; color: var(--text); }
+.wa-when  { font-size: 24px; font-weight: 700; color: var(--text); }
+.wa-days  { font-size: 20px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.wa-row.urgent .wa-days { color: var(--amber-text); }
+.wa-later { font-size: 17px; font-weight: 600; color: var(--text-3); text-align: right; white-space: nowrap; }
+.wa-note  { margin-top: auto; padding-top: 10px; font-size: 14px; color: var(--text-3); }

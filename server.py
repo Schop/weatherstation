@@ -14,6 +14,7 @@ import garage
 import homeassistant
 import p1
 import speedtest
+import waste
 import lanscan
 import netstatus
 import radar
@@ -214,6 +215,14 @@ def speed_test():
     if request.method == "POST":                 # the button: starts a test unless one is already running
         started = _speedtest.start()
     resp = jsonify(dict(_speedtest.snapshot(), started=started))
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/waste")
+def waste_calendar():
+    data = waste.calendar(config.WASTE_COMPANY_CODE, config.WASTE_POSTCODE, config.WASTE_HOUSENUMBER)
+    resp = jsonify(waste.reparse_for_today(data) if data else {"error": "unavailable"})
     resp.headers["Cache-Control"] = "no-store"
     return resp
 

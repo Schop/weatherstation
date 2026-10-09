@@ -45,23 +45,9 @@
       <div class="feels">Voelt als {{ data.feels_like | round | int }}°C</div>
     </div>
 
-    <div class="stats-grid">
-      <div class="tile sunrise">
-        <span class="tile-label">Zonsopkomst</span>
-        <span class="tile-value">↑ {{ data.sunrise }}</span>
-      </div>
-      <div class="tile sunset">
-        <span class="tile-label">Zonsondergang</span>
-        <span class="tile-value">↓ {{ data.sunset }}</span>
-      </div>
-      <div class="tile">
-        <span class="tile-label">Vochtigheid</span>
-        <span class="tile-value">{{ data.humidity }}%</span>
-      </div>
-      <div class="tile{% if data.wind_speed > cfg.WIND_WARN_KMH %} warn{% endif %}">
-        <span class="tile-label">Wind</span>
-        <span class="tile-value">{{ data.wind_speed | round | int }} <small>km/u {{ data.wind_dir_label }}</small></span>
-      </div>
+    <div class="waste-panel" id="waste-panel" style="display:none">
+      <div class="wp-head">Afvalkalender</div>
+      <div class="wp-list" id="waste-tile"></div>
     </div>
 
   </div><!-- .main-content -->
@@ -154,6 +140,7 @@
       <span class="tab"        id="tab-printer" onclick="showTab('printer')">3D Printer</span>
       <span class="tab"        id="tab-garage"  onclick="showTab('garage')">Garage</span>
       <span class="tab active" id="tab-power"   onclick="showTab('power')">Power</span>
+      <span class="tab"        id="tab-waste"   onclick="showTab('waste')">Waste</span>
       <span class="tab"        id="tab-system"  onclick="showTab('system')">System</span>
     </div>
     <span class="sclock" id="system-clock"></span>
@@ -345,6 +332,13 @@
     <div class="pr-msg" id="pw-msg" style="display:none"></div>
   </div><!-- #page-power -->
 
+  <div class="tab-page" id="page-waste" style="display:none">
+    <div class="wa-wrap">
+      <div class="wa-list" id="wa-list"></div>
+      <div class="wa-note" id="wa-note"></div>
+    </div>
+  </div><!-- #page-waste -->
+
 
 
   <div class="speed-panel" id="speed-panel">
@@ -415,12 +409,12 @@
 
   function showTab(tab) {
     currentTab = tab;
-    for (const t of ['system', 'network', 'printer', 'garage', 'power']) {
+    for (const t of ['system', 'network', 'printer', 'garage', 'power', 'waste']) {
       document.getElementById('page-' + t).style.display = t === tab ? 'flex' : 'none';
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     }
-    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage, power: refreshPower }[tab];
-    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000, power: 2000 }[tab];
+    const refresh = { system: refreshSystem, network: refreshNetwork, printer: refreshPrinter, garage: refreshGarage, power: refreshPower, waste: refreshWaste }[tab];
+    const every   = { system: 2000, network: 4000, printer: 2000, garage: 3000, power: 2000, waste: 60000 }[tab];
     clearInterval(sysTimer);
     refresh();
     sysTimer = setInterval(refresh, every);
@@ -860,6 +854,84 @@
       }
     } catch (e) { /* keep the previous graph */ }
   }
+
+  // ── Waste collection (Blink, via the Ximmio calendar) ───────
+  const WASTE_DAYS_NL = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
+  const WASTE_MONTHS_NL = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+  const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const mondayOf = d => { const x = dayStart(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+
+  function whenPhrase(iso, now) {
+    const today = dayStart(now), t = new Date(iso + 'T00:00:00');
+    const days = Math.round((t - today) / 864e5);
+    const wk = Math.round((mondayOf(t) - mondayOf(today)) / (7 * 864e5));       // calendar weeks ahead
+    const name = WASTE_DAYS_NL[t.getDay()];
+    if (days < 0)  return 'verlopen';
+    if (days === 0) return 'vandaag';
+    if (days === 1) return 'morgen';
+    if (days === 2) return 'overmorgen';
+    if (wk === 0)   return 'deze week ' + name;            // later this week
+    if (wk === 1)   return 'volgende week ' + name;
+    if (wk === 2)   return name + ' over 2 weken';
+    if (wk <= 5)    return `${name} over ${wk} weken`;
+    return `${name} ${t.getDate()} ${WASTE_MONTHS_NL[t.getMonth()]}`;
+  }
+  const WASTE_MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const wasteWhen = item => whenPhrase(item.next, new Date());
+  const wasteShort = iso => { const d = new Date(iso + 'T00:00:00'); return `${WASTE_DAYS_NL[d.getDay()].slice(0, 2)} ${d.getDate()} ${WASTE_MONTHS[d.getMonth()]}`; };
+  function wasteBin(color) {
+    const i = document.createElement('i');
+    i.className = 'bin ' + color;
+    return i;
+  }
+
+  async function refreshWaste() {
+    let d = null;
+    try { d = await (await fetch('/api/waste', { cache: 'no-store' })).json(); } catch (e) { return; }
+    const tile = document.getElementById('waste-tile'), page = document.getElementById('wa-list');
+    const items = d && d.items ? d.items : null;
+
+    // Home panel: the four main bins (not branches / mobile point), soonest first
+    const panel = document.getElementById('waste-panel');
+    if (tile && panel) {
+      tile.replaceChildren();
+      const main = items ? items.filter(i => i.home) : [];
+      panel.style.display = main.length ? 'flex' : 'none';
+      for (const it of main) {
+        const row = document.createElement('div');
+        row.className = 'wt-row' + (it.days <= 1 ? ' urgent' : '');
+        const mk = (cls, text) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; return e; };
+        const text = document.createElement('span'); text.className = 'wt-text';
+        text.append(mk('wt-name', it.label), mk('wt-when', wasteWhen(it)));
+        row.append(wasteBin(it.color), text, mk('wt-date', wasteShort(it.next)));
+        tile.append(row);
+      }
+    }
+
+    // Waste tab: everything, one row per type
+    if (page) {
+      page.replaceChildren();
+      if (!items) {
+        const m = document.createElement('div'); m.className = 'sh-empty';
+        m.textContent = 'Afvalkalender niet beschikbaar'; page.append(m);
+      } else {
+        for (const it of items) {
+          const row = document.createElement('div');
+          row.className = 'wa-row' + (it.days <= 1 ? ' urgent' : '');
+          const mk = (cls, text) => { const e = document.createElement('span'); e.className = cls; e.textContent = text; return e; };
+          const later = it.dates.slice(1, 4).map(x => { const dd = new Date(x + 'T00:00:00'); return `${dd.getDate()} ${WASTE_MONTHS[dd.getMonth()]}`; }).join(' · ');
+          row.append(wasteBin(it.color), mk('wa-name', it.label), mk('wa-when', wasteWhen(it)),
+                     mk('wa-days', wasteShort(it.next)),
+                     mk('wa-later', later ? 'daarna ' + later : ''));
+          page.append(row);
+        }
+        document.getElementById('wa-note').textContent =
+          (d.stale ? 'Let op: kalender niet ververst (service onbereikbaar) · ' : '') + 'bijgewerkt ' + (d.updated || '');
+      }
+    }
+  }
+  refreshWaste();
+  setInterval(refreshWaste, 30 * 60 * 1000);                  // the server caches for 6 h; this just re-reads it
 
   // ── Printer tab ────────────────────────────────────────────
   const PRINT_STATES = {
