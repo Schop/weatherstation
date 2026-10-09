@@ -281,5 +281,10 @@ if __name__ == "__main__":
     refresh_ev.set()
 
     print(f"Weather Station running at http://localhost:5000")
+    missing = [n for n in ("LATITUDE", "LONGITUDE") if getattr(config, n) is None]
+    if missing:
+        print(f"WARNING: {', '.join(missing)} not set: no weather or rain data. Set it in config_local.py.")
+    if not (config.WASTE_COMPANY_CODE and config.WASTE_POSTCODE and config.WASTE_HOUSENUMBER):
+        print("Note: waste calendar not configured (WASTE_COMPANY_CODE / WASTE_POSTCODE / WASTE_HOUSENUMBER).")
     print(f"Location: {config.LOCATION_NAME}  |  Refresh: {config.REFRESH_INTERVAL}s")
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

@@ -83,6 +83,8 @@ def _parse(rows, today):
 def calendar(company, postcode, number):
     """{'items': [...], 'updated': 'HH:MM', 'stale': bool} or None if never loaded."""
     global _cache
+    if not (company and postcode and number):        # not configured: no request at all
+        return None
     with _lock:
         now = time.time()
         if _cache and now - _cache[0] < CACHE_SECONDS:

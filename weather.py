@@ -114,6 +114,8 @@ def build_url(lat, lon):
 
 
 def fetch_weather(lat, lon):
+    if lat is None or lon is None:        # location not configured (see config_local.py)
+        return None
     url = build_url(lat, lon)
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:

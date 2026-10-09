@@ -1,7 +1,9 @@
 # --- Location ---
-LATITUDE = 51.385551
-LONGITUDE = 5.714190
-LOCATION_NAME = "Someren"
+# Personal values live in config_local.py (git-ignored): this repository is public.
+# Without them the weather and rain pages cannot work; the server says so at startup.
+LATITUDE = None
+LONGITUDE = None
+LOCATION_NAME = "Home"
 
 # --- Behaviour ---
 REFRESH_INTERVAL = 600  # seconds between API calls
@@ -33,9 +35,11 @@ HA_TOKEN = ""
 HA_SOLAR_POWER = "sensor.solaredge_current_power"
 
 # --- Waste collection (Ximmio API, used by Blink) ---
-WASTE_COMPANY_CODE = "252d30d0-2e74-469c-8f1e-c0e2e434eb58"
-WASTE_POSTCODE = "5712XT"
-WASTE_HOUSENUMBER = "27"
+# Company code: the "companyCode" in the address of your waste collector's calendar page.
+# Postcode and house number identify your address: set them in config_local.py.
+WASTE_COMPANY_CODE = ""
+WASTE_POSTCODE = ""
+WASTE_HOUSENUMBER = ""
 
 # --- Rain radar ---
 # Zoom of Buienradar's map widget: 6 = whole region, 8 = ~200 km wide,

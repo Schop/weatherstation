@@ -68,6 +68,9 @@ def _summary(points):
 
 def rain_forecast(lat, lon):
     """{'points': [{'t','mm'}...], 'state', 'summary', 'updated'} or None."""
+    if lat is None or lon is None:                    # location not configured
+        return None
+
     def load():
         points = _parse_rain(_get(RAIN_URL.format(lat=lat, lon=lon)).decode("utf-8", "replace"))
         if not points:
