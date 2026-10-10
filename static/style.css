@@ -1121,7 +1121,9 @@ body {
 }
 .theme-btn svg { width: 28px; height: 28px; fill: var(--text-2); }
 .theme-btn:active { background: var(--line-strong); }
-/* show the moon while the theme is light (tap = go dark), the sun while it is dark (tap = go light) */
-.theme-btn .i-moon { display: none; }
-:root[data-theme="light"] .theme-btn .i-sun  { display: none; }
-:root[data-theme="light"] .theme-btn .i-moon { display: block; }
+/* the icon shows the current MODE: auto (half sun, half moon), fixed dark (moon), fixed light (sun) */
+.theme-btn svg { display: none; }
+.theme-btn .i-auto { display: block; color: var(--text-2); }
+.theme-btn[data-mode="dark"]  .i-auto, .theme-btn[data-mode="light"] .i-auto { display: none; }
+.theme-btn[data-mode="dark"]  .i-moon { display: block; }
+.theme-btn[data-mode="light"] .i-sun  { display: block; }

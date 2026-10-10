@@ -7,7 +7,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script>try { var t = localStorage.getItem("theme"); if (t === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
+  <script>
+    // Theme: "auto" follows the sun (light by day, dark at night), or a fixed "light" / "dark".
+    // Decided before first paint so a reload never flashes the wrong colours.
+    var SUN = { rise: {{ (sunrise or "07:00") | tojson }}, set: {{ (sunset or "19:00") | tojson }} };
+    function themeMode() { try { var m = localStorage.getItem("theme"); return m === "light" || m === "dark" ? m : "auto"; } catch (e) { return "auto"; } }
+    function isDaytime(now) {
+      var m = function (hhmm) { var p = /^(\d\d):(\d\d)$/.exec(hhmm || ""); return p ? +p[1] * 60 + +p[2] : null; };
+      var rise = m(SUN.rise), set = m(SUN.set), t = now.getHours() * 60 + now.getMinutes();
+      if (rise === null || set === null) { rise = 7 * 60; set = 19 * 60; }          // no sun data: fixed hours
+      return t >= rise && t < set;
+    }
+    function effectiveTheme() { var m = themeMode(); return m === "auto" ? (isDaytime(new Date()) ? "light" : "dark") : m; }
+    if (effectiveTheme() === "light") document.documentElement.setAttribute("data-theme", "light");
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -31,6 +44,7 @@
       <button class="theme-btn" onclick="toggleTheme()" aria-label="Switch theme">
         <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6"/><path d="M11 1h2v3.4h-2zM11 19.6h2V23h-2zM1 11h3.4v2H1zM19.6 11H23v2h-3.4zM4.2 5.6l1.4-1.4 2.4 2.4-1.4 1.4zM16 17.4l1.4-1.4 2.4 2.4-1.4 1.4zM4.2 18.4 6.6 16l1.4 1.4-2.4 2.4zM16 6.6l2.4-2.4 1.4 1.4-2.4 2.4z"/></svg>
         <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.9 8.9 0 1 0 11.1 11.1z"/></svg>
+        <svg class="i-auto" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18z"/><path d="M12 3a9 9 0 0 1 0 18z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       </button>
     </div>
   </div>
@@ -152,6 +166,7 @@
     <button class="theme-btn" onclick="toggleTheme()" aria-label="Switch theme">
         <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6"/><path d="M11 1h2v3.4h-2zM11 19.6h2V23h-2zM1 11h3.4v2H1zM19.6 11H23v2h-3.4zM4.2 5.6l1.4-1.4 2.4 2.4-1.4 1.4zM16 17.4l1.4-1.4 2.4 2.4-1.4 1.4zM4.2 18.4 6.6 16l1.4 1.4-2.4 2.4zM16 6.6l2.4-2.4 1.4 1.4-2.4 2.4z"/></svg>
         <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.9 8.9 0 1 0 11.1 11.1z"/></svg>
+        <svg class="i-auto" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18z"/><path d="M12 3a9 9 0 0 1 0 18z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
     </button>
   </div>
 
@@ -372,14 +387,32 @@
 
   // ── Theme (dark default, light on request; remembered in the browser) ──
   const themeColor = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  function toggleTheme() {
-    const light = document.documentElement.getAttribute('data-theme') !== 'light';
+  // Apply the theme the current mode asks for (also redraws the Power graph when the colours change).
+  function applyTheme() {
+    const light = effectiveTheme() === 'light';
+    if (light === (document.documentElement.getAttribute('data-theme') === 'light')) { updateThemeButton(); return; }
     if (light) document.documentElement.setAttribute('data-theme', 'light');
     else document.documentElement.removeAttribute('data-theme');
-    try { localStorage.setItem('theme', light ? 'light' : 'dark'); } catch (e) {}
-    pwHistoryAt = 0;                                       // redraw the Power graph with the new colours
-    if (typeof refreshPower === 'function') drawPowerGraph();
+    updateThemeButton();
+    pwHistoryAt = 0; slHistoryAt = 0;
+    if (typeof drawPowerGraph === 'function') drawPowerGraph();
+    if (typeof drawSolarGraph === 'function') drawSolarGraph();
   }
+  // The button cycles auto -> dark -> light -> auto. The icon shows the current MODE.
+  function toggleTheme() {
+    const next = { auto: 'dark', dark: 'light', light: 'auto' }[themeMode()];
+    try { if (next === 'auto') localStorage.removeItem('theme'); else localStorage.setItem('theme', next); } catch (e) {}
+    applyTheme();
+  }
+  function updateThemeButton() {
+    const mode = themeMode();
+    document.querySelectorAll('.theme-btn').forEach(b => {
+      b.dataset.mode = mode;
+      b.title = mode === 'auto' ? 'Theme: automatic (follows the sun)' : 'Theme: ' + mode;
+    });
+  }
+  setInterval(applyTheme, 60000);                          // dusk and dawn happen without a page reload
+  updateThemeButton();
 
   // ── System status page ─────────────────────────────────────
   const CIRC = 2 * Math.PI * 82;          // ring circumference (r = 82)

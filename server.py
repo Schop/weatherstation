@@ -6,6 +6,7 @@ Run:      python server.py
 Pi kiosk: chromium-browser --kiosk --noerrdialogs --disable-infobars http://localhost:5000
 """
 
+import re
 import threading
 import time
 import config
@@ -101,7 +102,7 @@ def index():
     if data is None:
         return render_template("index.html",
                                data=None, state=state, cfg=config,
-                               main_icon="",
+                               main_icon="", sunrise=None, sunset=None,
                                strip_hourly=[], daily_items=[])
 
     # Main page: next 8 hours
@@ -123,6 +124,8 @@ def index():
         state=state,
         cfg=config,
         main_icon=icon_class(data.icon_type),
+        sunrise=data.sunrise if re.fullmatch(r"\d\d:\d\d", data.sunrise or "") else None,
+        sunset=data.sunset if re.fullmatch(r"\d\d:\d\d", data.sunset or "") else None,
         strip_hourly=strip_hourly,
         daily_items=daily_items,
     )
