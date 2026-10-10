@@ -896,9 +896,9 @@ body {
 
 .pw-phases { grid-column: 2; display: flex; flex-direction: column; gap: 9px; background: var(--card); border-radius: 16px; padding: 16px 20px; justify-content: center; }
 .pw-house { grid-column: 1; }
-.ph { display: grid; grid-template-columns: 30px 1fr 78px 120px; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
+.ph { display: grid; grid-template-columns: 30px 1fr 96px 120px; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
 .ph-n  { font-size: 18px; font-weight: 700; color: var(--text); }
-.ph-w  { font-size: 18px; font-weight: 700; color: var(--text); text-align: right; }
+.ph-w  { font-size: 18px; font-weight: 700; color: var(--text); text-align: right; white-space: nowrap; }
 .ph-va { font-size: 14px; font-weight: 600; color: var(--text-2); text-align: right; white-space: nowrap; }
 .ph-bar { position: relative; height: 12px; border-radius: 6px; background: var(--track); overflow: hidden; }
 .ph-bar::after { content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: var(--text-2); }
