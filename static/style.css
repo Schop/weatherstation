@@ -90,30 +90,18 @@ body {
 
 /* ── Top bar ─────────────────────────────────────────── */
 .top-bar {
-  position: relative;          /* the tabs are centred on the bar itself */
   height: 84px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
+  padding: 0 28px 0 32px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--line);
 }
 
-.top-bar > .tabs {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
+.top-bar > .tabs { flex: 1; justify-content: center; margin: 0 24px; }
 
 /* clock with the date underneath, so long dates never reach the tabs */
-.top-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
 .top-bar-left {
   display: flex;
   flex-direction: column;
@@ -121,7 +109,8 @@ body {
   gap: 0;
 }
 .top-bar-left .clock { font-size: 40px; line-height: 1.05; }
-.top-bar-left .date  { font-size: 22px; line-height: 1.15; }
+.top-bar-left .date  { font-size: 22px; line-height: 1.15; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-bar-left { flex-shrink: 0; }
 
 .clock, .date, .location {
   font-size: 44px;
@@ -133,12 +122,6 @@ body {
 
 .date { color: var(--text-icon); font-weight: 600; font-size: 32px; }
 
-#home-page, #radar-page {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
 
 /* ── Main content ───────────────────────────────────── */
 .main-content {
@@ -322,46 +305,7 @@ body {
 }
 
 /* ── System status page ─────────────────────────────── */
-#system-view {
-  position: absolute;
-  inset: 0;
-  width: 1280px;
-  height: 800px;
-  display: none;
-  flex-direction: column;
-}
-
-.sys-bar {
-  height: 84px;
-  background: var(--card);
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 40px;
-}
-
 /* home button: same round chip style as the cogwheel tile on the Home page */
-.home-btn {
-  width: 56px;
-  height: 56px;
-  margin-right: auto;
-  border: 0;
-  border-radius: 50%;
-  background: var(--card-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.home-btn svg { width: 30px; height: 30px; fill: var(--accent); }
-.home-btn:active { background: var(--line-strong); }
-.sys-bar .title { font-size: 34px; font-weight: 700; color: var(--text); }
-.sys-bar .sclock {
-  font-size: 30px; font-weight: 600; color: var(--text-2); margin-left: auto;
-  font-variant-numeric: tabular-nums;
-}
-
 /* Ring gauges */
 .gauges {
   height: 330px;
@@ -454,16 +398,19 @@ body {
 /* ── Tabs (system / network) ────────────────────────── */
 .tabs {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   padding: 5px;
   background: var(--card-2);
   border-radius: 16px;
 }
 
 .tab {
-  padding: 8px 30px;
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 13px 14px;
   border-radius: 12px;
-  font-size: 22px;
+  font-size: 19px;
+  white-space: nowrap;
   font-weight: 700;
   color: var(--text-2);
   cursor: pointer;
@@ -481,7 +428,6 @@ body {
   min-height: 0;
   flex-direction: column;
 }
-#page-system { display: flex; }
 
 /* ── Network page ───────────────────────────────────── */
 .net-summary {
@@ -758,18 +704,6 @@ body {
 }
 
 /* ── Settings cog tile (last slot of the daily strip) ── */
-.strip-card.cog { cursor: pointer; justify-content: center; }
-.cog-btn {
-  width: 104px;
-  height: 104px;
-  border-radius: 50%;
-  background: var(--card-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.cog-btn svg { width: 58px; height: 58px; fill: var(--text-2); }
-
 /* ── Garage page: current state + event log ─────────── */
 .gr-now {
   height: 150px;
